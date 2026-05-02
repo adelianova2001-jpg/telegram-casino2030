@@ -18,7 +18,7 @@ let isSpinning = false;
 
 // Символы слотов и их веса (вероятности)
 const symbols = ['🍒', '🍋', '🔔', '7️⃣', '👑', '💎', '🗝️'];
-const symbolWeights = [30, 25, 20, 12, 7, 4, 2]; // 🗝️ — редкий
+const symbolWeights = [30, 25, 20, 12, 7, 4, 2];
 
 // Множители выигрышей
 const multipliers = {
@@ -30,6 +30,21 @@ const multipliers = {
   '🍋': 6,
   '🍒': 5
 };
+
+// ============ USER ID ============
+function getUserId() {
+  try {
+    if (tg && tg.initDataUnsafe?.user?.id) {
+      return tg.initDataUnsafe.user.id.toString();
+    }
+  } catch(e) {}
+  let guestId = localStorage.getItem('guestId');
+  if (!guestId) {
+    guestId = 'guest_' + Date.now();
+    localStorage.setItem('guestId', guestId);
+  }
+  return guestId;
+}
 
 // Получить случайный символ с учётом весов
 function getWeightedSymbol() {
@@ -149,43 +164,34 @@ async function spin() {
   spinBtn.disabled = true;
   spinBtn.textContent = 'Spinning...';
 
-  // Очищаем результат
   document.getElementById('result').innerHTML = '<div class="result-placeholder">Spinning...</div>';
 
   haptic('spin');
 
-  // Генерируем результат
   const result = [
     getWeightedSymbol(),
     getWeightedSymbol(),
     getWeightedSymbol()
   ];
 
-  // Анимация всех барабанов с разной длительностью
   await Promise.all([
     animateReel(0, result[0], 1000),
     animateReel(1, result[1], 1500),
     animateReel(2, result[2], 2000)
   ]);
 
-  // Проверка выигрыша
   let winAmount = 0;
   let winType = '';
 
   if (result[0] === result[1] && result[1] === result[2]) {
-    // Три одинаковых
     const mult = multipliers[result[0]] || 5;
     winAmount = currentBet * mult;
     winType = `${result[0]} × 3 — x${mult}`;
-
-    // Подсветка всех барабанов
     [0,1,2].forEach(i => document.getElementById('reel'+i).classList.add('winner'));
   } else if (result[0] === result[1] || result[1] === result[2] || result[0] === result[2]) {
-    // Две одинаковых
     winAmount = currentBet * 2;
     winType = 'Pair — x2';
 
-    // Подсветка пары
     if (result[0] === result[1]) {
       document.getElementById('reel0').classList.add('winner');
       document.getElementById('reel1').classList.add('winner');
@@ -204,7 +210,6 @@ async function spin() {
     showResult(true, winAmount, winType);
     haptic('win');
 
-    // Убираем подсветку через 3 сек
     setTimeout(() => {
       [0,1,2].forEach(i => document.getElementById('reel'+i).classList.remove('winner'));
     }, 3000);
@@ -216,6 +221,9 @@ async function spin() {
   spinBtn.disabled = false;
   spinBtn.textContent = 'Spin';
   isSpinning = false;
+
+  // Сохраняем баланс на сервер
+  saveBalance();
 }
 
 // Показать результат
@@ -235,20 +243,54 @@ function showResult(isWin, amount, message) {
   }
 }
 
-// Инициализация
-updateBalance();
+// ============ СИНХРОНИЗАЦИЯ БАЛАНСА ============
+async function initBalance() {
+  try {
+    const userId = getUserId();
+    const response = await fetch('/api/balance/' + userId);
+    const data = await response.json();
+    if (typeof data.balance === 'number') {
+      balance = data.balance;
+    }
+  } catch(e) {
+    console.log('Init balance error:', e);
+  }
+  updateBalance();
+}
+
+async function refreshBalance() {
+  try {
+    const userId = getUserId();
+    const response = await fetch('/api/balance/' + userId);
+    const data = await response.json();
+    if (typeof data.balance === 'number') {
+      balance = data.balance;
+      updateBalance();
+      showToast('💰 Balance updated!');
+    }
+  } catch(e) {
+    console.log('Refresh balance error:', e);
+  }
+}
+
+async function saveBalance() {
+  try {
+    const userId = getUserId();
+    await fetch('/api/balance/' + userId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ balance: balance })
+    });
+  } catch(e) {
+    console.log('Save balance error:', e);
+  }
+}
+
+// Инициализация — загружаем баланс с сервера
+initBalance();
 
 // ============ РЕФЕРАЛЬНАЯ СИСТЕМА ============
 let referralLink = '';
-
-function getUserId() {
-  try {
-    if (tg && tg.initDataUnsafe?.user?.id) {
-      return tg.initDataUnsafe.user.id.toString();
-    }
-  } catch(e) {}
-  return 'guest_' + Math.floor(Math.random() * 1000000);
-}
 
 async function openReferralPage() {
   document.getElementById('referralModal').style.display = 'block';
@@ -263,14 +305,19 @@ function closeReferralPage() {
 async function loadReferralData() {
   try {
     const userId = getUserId();
-    const response = await fetch('/api/referral/' + userId);
+    const response = await fetch('/api/user/' + userId);
     const data = await response.json();
-    referralLink = data.link;
-    document.getElementById('refLink').textContent = data.link;
+
+    // Формируем ссылку (берём username бота из URL)
+    const botUsername = 'my_casino_2030_bot';
+    referralLink = `https://t.me/${botUsername}?start=${userId}`;
+
+    document.getElementById('refLink').textContent = referralLink;
     document.getElementById('refCount').textContent = data.referrals || 0;
     document.getElementById('refLevel2').textContent = data.referralsLevel2 || 0;
-    document.getElementById('refEarnings').textContent = data.earnings || 0;
+    document.getElementById('refEarnings').textContent = data.referralEarnings || 0;
   } catch(e) {
+    console.log('Load referral error:', e);
     document.getElementById('refLink').textContent = 'Error loading';
   }
 }
@@ -358,6 +405,7 @@ function showToast(message) {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2000);
 }
+
 // ============ МАГАЗИН ============
 
 function openShop() {
@@ -368,29 +416,47 @@ function closeShop() {
   document.getElementById('shopModal').style.display = 'none';
 }
 
-function buyPackage(packageId) {
-  // Закрываем модальное окно
-  closeShop();
+async function buyPackage(packageId) {
+  showToast('⏳ Creating invoice...');
 
-  // Открываем чат с ботом для оплаты через команду
-  // (Telegram Stars работают через invoice от бота)
   try {
-    if (tg && tg.sendData) {
-      // Отправляем данные боту, он создаст инвойс
-      tg.sendData(JSON.stringify({ action: 'buy', package: packageId }));
+    const userId = getUserId();
+
+    const response = await fetch('/api/create-invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ packageId, userId })
+    });
+
+    const data = await response.json();
+
+    if (!data.invoiceUrl) {
+      showToast('❌ Failed to create invoice');
+      console.log('Invoice error:', data);
+      return;
     }
 
-    // Альтернативно — открываем бота с командой
-    showToast('Opening payment...');
-    
-    // Закрываем Mini App, чтобы пользователь увидел инвойс в боте
-    setTimeout(() => {
-      if (tg && tg.close) {
-        tg.close();
-      }
-    }, 500);
+    if (tg && tg.openInvoice) {
+      tg.openInvoice(data.invoiceUrl, (status) => {
+        if (status === 'paid') {
+          closeShop();
+          showToast('✅ Payment successful!');
+          setTimeout(() => {
+            refreshBalance();
+          }, 1500);
+        } else if (status === 'cancelled') {
+          showToast('Payment cancelled');
+        } else if (status === 'failed') {
+          showToast('❌ Payment failed');
+        } else if (status === 'pending') {
+          showToast('⏳ Payment pending...');
+        }
+      });
+    } else {
+      window.open(data.invoiceUrl, '_blank');
+    }
   } catch(e) {
     console.log('Payment error:', e);
-    showToast('Error. Use /shop in bot');
+    showToast('❌ Error. Try again');
   }
 }
