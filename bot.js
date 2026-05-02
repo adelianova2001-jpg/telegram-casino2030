@@ -18,6 +18,7 @@ function loadUsers() {
       return JSON.parse(fs.readFileSync(dataFile, 'utf8'));
     }
   } catch (e) {
+    
     console.log('Ошибка загрузки users.json:', e.message);
   }
   return {};
@@ -362,5 +363,17 @@ bot.on('successful_payment', (msg) => {
 bot.on('polling_error', (error) => {
   console.log('Ошибка polling:', error.message);
 });
-
+// Обработка данных от Mini App (нажатие "Купить")
+bot.on('message', (msg) => {
+  if (msg.web_app_data) {
+    try {
+      const data = JSON.parse(msg.web_app_data.data);
+      if (data.action === 'buy' && data.package) {
+        sendStarsInvoice(msg.chat.id, data.package);
+      }
+    } catch(e) {
+      console.log('Web app data error:', e.message);
+    }
+  }
+});
 console.log('🤖 Бот запущен с реферальной системой!');
