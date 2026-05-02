@@ -1,354 +1,510 @@
+/* ============ BLACK KEY CASINO ============ */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Arial', sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: linear-gradient(135deg, #1a0033 0%, #000428 100%);
-  color: #fff;
+  font-family: 'Inter', sans-serif;
+  background: #0a0a0a;
+  color: #e8e8e8;
   min-height: 100vh;
   overflow-x: hidden;
-  user-select: none;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0a0a 0%, #141414 100%);
+  background-attachment: fixed;
 }
 
-.app {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 15px;
-}
-
-/* ШАПКА */
+/* Шапка */
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 0, 255, 0.3);
-  border-radius: 15px;
-  padding: 12px 18px;
-  margin-bottom: 15px;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
-  font-size: 18px;
-  font-weight: bold;
-  background: linear-gradient(90deg, #ff00ff, #00ffff);
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #f4d03f 0%, #d4af37 50%, #b8860b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.logo::before {
+  content: '🗝️';
+  -webkit-text-fill-color: initial;
+  font-size: 32px;
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+}
+
+.tagline {
+  font-size: 10px;
+  letter-spacing: 6px;
+  color: #888;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Баланс */
+.balance-container {
+  margin: 20px auto;
+  max-width: 400px;
+  padding: 0 20px;
 }
 
 .balance {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 16px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 16px;
+  padding: 20px 25px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.balance::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  background: linear-gradient(135deg, #d4af37, transparent, #d4af37);
+  z-index: -1;
+  border-radius: 16px;
+  opacity: 0.3;
 }
 
 .balance-label {
-  opacity: 0.7;
-  font-size: 12px;
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
 }
 
 .balance-value {
-  font-weight: bold;
-  color: #ffd700;
-  font-size: 18px;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  font-family: 'Cinzel', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #d4af37;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
 }
 
-/* ВКЛАДКИ */
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
+.balance-value::after {
+  content: ' ◆';
+  font-size: 20px;
+  opacity: 0.7;
 }
 
-.tab {
-  flex: 1;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.3s;
-}
-
-.tab.active {
-  background: linear-gradient(135deg, #ff00ff, #8a2be2);
-  border-color: #ff00ff;
-  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
-}
-
-/* ИГРОВЫЕ СЕКЦИИ */
-.game-section {
-  display: none;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
+/* Контейнер игр */
+.games-container {
+  max-width: 500px;
+  margin: 0 auto;
   padding: 20px;
-  backdrop-filter: blur(10px);
 }
 
-.game-section.active {
-  display: block;
-  animation: fadeIn 0.4s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.game-section h2 {
+.section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  color: #d4af37;
+  letter-spacing: 4px;
+  text-transform: uppercase;
   text-align: center;
-  margin-bottom: 20px;
+  margin: 20px 0 15px;
+  position: relative;
+}
+
+.section-title::before,
+.section-title::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d4af37, transparent);
+}
+
+.section-title::before { left: 20%; }
+.section-title::after { right: 20%; }
+
+/* Карточки игр */
+.games-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.game-card {
+  background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card:hover,
+.game-card:active {
+  border-color: rgba(212, 175, 55, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+  transition: left 0.6s ease;
+}
+
+.game-card:hover::before {
+  left: 100%;
+}
+
+.game-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
+}
+
+.game-name {
+  font-family: 'Cinzel', serif;
   font-size: 22px;
-  background: linear-gradient(90deg, #00ffff, #ff00ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 700;
+  color: #e8e8e8;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.game-desc {
+  font-size: 13px;
+  color: #888;
+  letter-spacing: 0.5px;
 }
 
 /* СЛОТЫ */
-.slots-machine {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
-  background: #000;
+.slots-container {
+  max-width: 450px;
+  margin: 20px auto;
   padding: 20px;
-  border-radius: 15px;
-  border: 3px solid gold;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.2);
 }
 
-.slot {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #2a2a4e, #1a1a2e);
-  border: 2px solid gold;
+.slots-back-btn {
+  background: transparent;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #d4af37;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.slots-back-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.slot-machine {
+  background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow:
+    0 0 40px rgba(212, 175, 55, 0.15),
+    inset 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.slot-machine::before {
+  content: '';
+  position: absolute;
+  top: -3px; left: -3px; right: -3px; bottom: -3px;
+  background: linear-gradient(135deg, #d4af37, #8b6914, #d4af37);
+  border-radius: 20px;
+  z-index: -1;
+  opacity: 0.4;
+}
+
+.slot-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  color: #d4af37;
+  text-align: center;
+  letter-spacing: 4px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.reels {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  background: #000;
+  padding: 20px 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  margin-bottom: 20px;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+}
+
+.reel {
+  background: linear-gradient(180deg, #0a0a0a, #1a1a1a, #0a0a0a);
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 10px;
+  height: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
-  transition: transform 0.1s;
+  font-size: 60px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
-.slot.spinning {
+.reel-inner {
+  transition: transform 0.1s linear;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reel.spinning .reel-inner {
   animation: spin 0.1s linear infinite;
 }
 
 @keyframes spin {
   0% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0); }
+  100% { transform: translateY(-70px); }
 }
 
-/* РУЛЕТКА */
-.roulette-wheel {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  margin: 0 auto 20px;
-  background: conic-gradient(
-    #ff0000 0deg 20deg, #000 20deg 40deg,
-    #ff0000 40deg 60deg, #000 60deg 80deg,
-    #ff0000 80deg 100deg, #000 100deg 120deg,
-    #ff0000 120deg 140deg, #000 140deg 160deg,
-    #ff0000 160deg 180deg, #000 180deg 200deg,
-    #00ff00 200deg 220deg,
-    #ff0000 220deg 240deg, #000 240deg 260deg,
-    #ff0000 260deg 280deg, #000 280deg 300deg,
-    #ff0000 300deg 320deg, #000 320deg 340deg,
-    #ff0000 340deg 360deg
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 5px solid gold;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-  transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+.reel.winner {
+  box-shadow:
+    inset 0 0 30px rgba(212, 175, 55, 0.5),
+    0 0 20px rgba(212, 175, 55, 0.6);
+  border-color: #d4af37;
+  animation: winPulse 0.6s ease infinite;
 }
 
-.roulette-number {
-  width: 70px;
-  height: 70px;
-  background: #fff;
-  color: #000;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  font-weight: bold;
+@keyframes winPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
-.roulette-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.roulette-buttons button {
-  padding: 14px;
-  font-size: 15px;
-  font-weight: bold;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  color: white;
-  transition: all 0.2s;
-}
-
-.btn-red {
-  background: linear-gradient(135deg, #ff0000, #8b0000);
-  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
-}
-
-.btn-black {
-  background: linear-gradient(135deg, #333, #000);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-}
-
-.btn-green {
-  background: linear-gradient(135deg, #00ff00, #006400);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
-}
-
-.roulette-buttons button:active {
-  transform: scale(0.95);
-}
-
-/* КУБИКИ */
-.dice-container {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.dice {
-  width: 80px;
-  height: 80px;
-  background: white;
-  color: black;
-  border-radius: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 50px;
-  box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
-}
-
-.dice.rolling {
-  animation: roll 0.1s linear infinite;
-}
-
-@keyframes roll {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.dice-choice {
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.dice-choice select {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  font-size: 14px;
-  margin-top: 5px;
-}
-
-/* ОБЩИЕ ЭЛЕМЕНТЫ */
+/* Ставка */
 .bet-controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.bet-btn {
+  background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #d4af37;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.bet-btn:active {
+  background: #d4af37;
+  color: #000;
+}
+
+.bet-display {
+  text-align: center;
+}
+
+.bet-label {
+  font-size: 10px;
+  color: #888;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.bet-amount {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  color: #d4af37;
+  font-weight: 700;
+}
+
+/* Кнопка SPIN */
+.spin-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #f4d03f, #d4af37, #b8860b);
+  border: none;
+  color: #000;
+  padding: 18px;
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 20px rgba(212, 175, 55, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.spin-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.4);
+}
+
+.spin-btn:disabled {
+  background: linear-gradient(135deg, #444, #333);
+  color: #666;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Результат */
+.result-display {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  text-align: center;
+  min-height: 80px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
   justify-content: center;
+  flex-direction: column;
 }
 
-.bet-controls label {
-  font-size: 14px;
-  opacity: 0.8;
+.result-win {
+  color: #d4af37;
 }
 
-.bet-controls input {
-  width: 100px;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  font-size: 16px;
-  text-align: center;
+.result-win .amount {
+  font-family: 'Cinzel', serif;
+  font-size: 32px;
+  font-weight: 900;
+  margin-top: 5px;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
 }
 
-.btn-spin {
-  width: 100%;
-  padding: 16px;
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #ff00ff, #8a2be2);
-  color: white;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
-  transition: all 0.2s;
+.result-lose {
+  color: #777;
 }
 
-.btn-spin:active {
-  transform: scale(0.97);
-}
-
-.btn-spin:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.result {
-  margin-top: 15px;
-  padding: 12px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 10px;
-  min-height: 20px;
-}
-
-.result.win {
-  background: rgba(0, 255, 0, 0.15);
-  border: 1px solid #00ff00;
-  color: #00ff00;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-}
-
-.result.lose {
-  background: rgba(255, 0, 0, 0.15);
-  border: 1px solid #ff4444;
-  color: #ff6666;
-}
-
-.info {
-  margin-top: 15px;
-  text-align: center;
+.result-placeholder {
+  color: #555;
   font-size: 12px;
-  opacity: 0.7;
-  line-height: 1.6;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* Таблица выплат */
+.paytable {
+  margin-top: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.paytable-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: #d4af37;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.paytable-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 5px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+  font-size: 14px;
+}
+
+.paytable-row:last-child {
+  border-bottom: none;
+}
+
+.paytable-symbols {
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+.paytable-mult {
+  color: #d4af37;
+  font-weight: 700;
+  font-family: 'Cinzel', serif;
+}
+
+/* Кнопка пригласить (обновлённая) */
+#inviteBtn {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  background: linear-gradient(135deg, #1a1a1a, #0a0a0a) !important;
+  color: #d4af37 !important;
+  border: 1px solid rgba(212, 175, 55, 0.5) !important;
+  border-radius: 50px !important;
+  padding: 14px 22px !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3) !important;
+  z-index: 999 !important;
+}
+
+/* Скрытие */
+.hidden {
+  display: none !important;
+}
+
+/* Адаптив */
+@media (max-width: 380px) {
+  .logo { font-size: 22px; letter-spacing: 3px; }
+  .balance-value { font-size: 28px; }
+  .reel { height: 90px; font-size: 50px; }
+  .spin-btn { font-size: 16px; letter-spacing: 4px; }
 }
