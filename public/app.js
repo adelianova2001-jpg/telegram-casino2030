@@ -251,3 +251,138 @@ setInterval(() => {
     alert('💝 Ты получил бонус: 100 фишек!');
   }
 }, 2000);
+// ============ РЕФЕРАЛЬНАЯ СИСТЕМА ============
+let referralLink = '';
+
+// Получение ID пользователя из Telegram
+function getUserId() {
+  try {
+    const tg = window.Telegram?.WebApp;
+    if (tg && tg.initDataUnsafe?.user?.id) {
+      return tg.initDataUnsafe.user.id.toString();
+    }
+  } catch (e) {}
+  return 'guest_' + Math.floor(Math.random() * 1000000);
+}
+
+// Открытие страницы рефералов
+async function openReferralPage() {
+  document.getElementById('referralModal').style.display = 'block';
+  await loadReferralData();
+  await loadTopReferrers();
+}
+
+// Закрытие
+function closeReferralPage() {
+  document.getElementById('referralModal').style.display = 'none';
+}
+
+// Загрузка данных пользователя
+async function loadReferralData() {
+  try {
+    const userId = getUserId();
+    const response = await fetch('/api/referral/' + userId);
+    const data = await response.json();
+
+    referralLink = data.link;
+    document.getElementById('refLink').textContent = data.link;
+    document.getElementById('refCount').textContent = data.referrals || 0;
+    document.getElementById('refLevel2').textContent = data.referralsLevel2 || 0;
+    document.getElementById('refEarnings').textContent = data.earnings || 0;
+  } catch (e) {
+    console.log('Ошибка загрузки реф-данных:', e);
+    document.getElementById('refLink').textContent = 'Ошибка загрузки';
+  }
+}
+
+// Загрузка топа
+async function loadTopReferrers() {
+  try {
+    const response = await fetch('/api/top-referrers');
+    const top = await response.json();
+    const container = document.getElementById('topReferrers');
+
+    if (!top || top.length === 0) {
+      container.innerHTML = '<div style="text-align:center; opacity:0.6;">Пока пусто. Стань первым!</div>';
+      return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    container.innerHTML = top.map((u, i) => `
+      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+        <span>${medals[i] || (i + 1) + '.'} ${u.name}</span>
+        <span style="color:#ffd700;">${u.referrals} 👥 | ${u.earnings} 💰</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('topReferrers').textContent = 'Ошибка загрузки';
+  }
+}
+
+// Копировать ссылку
+function copyReferralLink() {
+  if (!referralLink) return;
+
+  try {
+    navigator.clipboard.writeText(referralLink).then(() => {
+      showToast('✅ Ссылка скопирована!');
+    }).catch(() => fallbackCopy());
+  } catch (e) {
+    fallbackCopy();
+  }
+}
+
+function fallbackCopy() {
+  const textarea = document.createElement('textarea');
+  textarea.value = referralLink;
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    showToast('✅ Ссылка скопирована!');
+  } catch (e) {
+    showToast('❌ Не удалось скопировать');
+  }
+  document.body.removeChild(textarea);
+}
+
+// Поделиться через Telegram
+function shareReferralLink() {
+  if (!referralLink) return;
+
+  const text = '🎰 Играй со мной в Casino 2030! Получи 200 фишек за регистрацию по моей ссылке!';
+  const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink) + '&text=' + encodeURIComponent(text);
+
+  try {
+    const tg = window.Telegram?.WebApp;
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, '_blank');
+    }
+  } catch (e) {
+    window.open(shareUrl, '_blank');
+  }
+}
+
+// Уведомление
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4caf50;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: bold;
+    z-index: 10000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+// ============ КОНЕЦ РЕФ-СИСТЕМЫ ============
