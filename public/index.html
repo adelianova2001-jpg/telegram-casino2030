@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Casino 2030</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Шапка с балансом -->
+    <header class="header">
+      <div class="logo">🎰 CASINO 2030</div>
+      <div class="balance">
+        <span class="balance-label">Баланс:</span>
+        <span class="balance-value" id="balance">1000</span>
+        <span class="balance-coin">💰</span>
+      </div>
+    </header>
+
+    <!-- Вкладки с играми -->
+    <nav class="tabs">
+      <button class="tab active" data-game="slots">🎰 Слоты</button>
+      <button class="tab" data-game="roulette">🎡 Рулетка</button>
+      <button class="tab" data-game="dice">🎲 Кубики</button>
+    </nav>
+
+    <!-- СЛОТЫ -->
+    <section class="game-section active" id="slots">
+      <h2>🎰 Слоты</h2>
+      <div class="slots-machine">
+        <div class="slot" id="slot1">🍒</div>
+        <div class="slot" id="slot2">🍋</div>
+        <div class="slot" id="slot3">🔔</div>
+      </div>
+      <div class="bet-controls">
+        <label>Ставка:</label>
+        <input type="number" id="slots-bet" value="10" min="1" max="1000">
+      </div>
+      <button class="btn-spin" id="slots-spin">КРУТИТЬ 🎰</button>
+      <div class="result" id="slots-result"></div>
+      <div class="info">
+        <p>💎💎💎 — x50 | 7️⃣7️⃣7️⃣ — x25</p>
+        <p>🔔🔔🔔 — x10 | Три одинаковых — x5</p>
+        <p>Две одинаковые — x2</p>
+      </div>
+    </section>
+
+    <!-- РУЛЕТКА -->
+    <section class="game-section" id="roulette">
+      <h2>🎡 Рулетка</h2>
+      <div class="roulette-wheel" id="roulette-wheel">
+        <div class="roulette-number" id="roulette-number">?</div>
+      </div>
+      <div class="bet-controls">
+        <label>Ставка:</label>
+        <input type="number" id="roulette-bet" value="10" min="1" max="1000">
+      </div>
+      <div class="roulette-buttons">
+        <button class="btn-red" data-color="red">🔴 Красное (x2)</button>
+        <button class="btn-black" data-color="black">⚫ Чёрное (x2)</button>
+        <button class="btn-green" data-color="green">🟢 Зеро (x14)</button>
+      </div>
+      <div class="result" id="roulette-result"></div>
+    </section>
+
+    <!-- КУБИКИ -->
+    <section class="game-section" id="dice">
+      <h2>🎲 Кубики</h2>
+      <div class="dice-container">
+        <div class="dice" id="dice1">🎲</div>
+        <div class="dice" id="dice2">🎲</div>
+      </div>
+      <div class="bet-controls">
+        <label>Ставка:</label>
+        <input type="number" id="dice-bet" value="10" min="1" max="1000">
+      </div>
+      <div class="dice-choice">
+        <label>Угадай сумму:</label>
+        <select id="dice-guess">
+          <option value="low">Меньше 7 (x2)</option>
+          <option value="seven">Ровно 7 (x5)</option>
+          <option value="high">Больше 7 (x2)</option>
+        </select>
+      </div>
+      <button class="btn-spin" id="dice-roll">БРОСИТЬ 🎲</button>
+      <div class="result" id="dice-result"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
