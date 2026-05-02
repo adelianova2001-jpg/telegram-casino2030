@@ -358,3 +358,39 @@ function showToast(message) {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2000);
 }
+// ============ МАГАЗИН ============
+
+function openShop() {
+  document.getElementById('shopModal').style.display = 'block';
+}
+
+function closeShop() {
+  document.getElementById('shopModal').style.display = 'none';
+}
+
+function buyPackage(packageId) {
+  // Закрываем модальное окно
+  closeShop();
+
+  // Открываем чат с ботом для оплаты через команду
+  // (Telegram Stars работают через invoice от бота)
+  try {
+    if (tg && tg.sendData) {
+      // Отправляем данные боту, он создаст инвойс
+      tg.sendData(JSON.stringify({ action: 'buy', package: packageId }));
+    }
+
+    // Альтернативно — открываем бота с командой
+    showToast('Opening payment...');
+    
+    // Закрываем Mini App, чтобы пользователь увидел инвойс в боте
+    setTimeout(() => {
+      if (tg && tg.close) {
+        tg.close();
+      }
+    }, 500);
+  } catch(e) {
+    console.log('Payment error:', e);
+    showToast('Error. Use /shop in bot');
+  }
+}
