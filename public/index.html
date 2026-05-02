@@ -6,6 +6,104 @@
   <title>Black Key Casino</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Monetag SDK для рекламы -->
+  <script src='//libtl.com/sdk.js' data-zone='9999999' data-sdk='show_9999999'></script>
+  <style>
+    /* Кнопки Daily / Ad */
+    .top-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 500px;
+      margin: 15px auto;
+      padding: 0 15px;
+    }
+    .action-btn {
+      background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+      border: 1px solid rgba(212,175,55,0.4);
+      color: #d4af37;
+      padding: 14px;
+      border-radius: 12px;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { border-color: #d4af37; }
+    .action-btn .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .action-btn.daily-ready {
+      background: linear-gradient(135deg, #d4af37, #f4d03f);
+      color: #000;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6); }
+      50% { box-shadow: 0 0 20px 5px rgba(212,175,55,0.4); }
+    }
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ff3b30;
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-family: sans-serif;
+      letter-spacing: 0;
+    }
+
+    /* Daily календарь */
+    .daily-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .daily-grid .day-7 { grid-column: span 4; }
+    .day-card {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+      position: relative;
+    }
+    .day-card.claimed {
+      background: rgba(76,175,80,0.15);
+      border-color: rgba(76,175,80,0.5);
+      opacity: 0.8;
+    }
+    .day-card.today {
+      background: linear-gradient(135deg, #d4af37, #f4d03f);
+      color: #000;
+      animation: pulse 2s infinite;
+    }
+    .day-card .day-num {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+    .day-card .day-reward {
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Cinzel', serif;
+      margin-top: 4px;
+    }
+    .day-card.today .day-num { opacity: 1; color: #000; }
+    .day-card .check {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      color: #4CAF50;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
@@ -19,8 +117,22 @@
   <div class="balance-container">
     <div class="balance">
       <div class="balance-label">Баланс</div>
-      <div class="balance-value" id="balance">1000</div>
+      <div class="balance-value" id="balance">0</div>
     </div>
+  </div>
+
+  <!-- Daily Bonus + Watch Ad -->
+  <div class="top-actions">
+    <button class="action-btn" id="dailyBtn" onclick="openDailyBonus()">
+      <span class="icon">🎁</span>
+      Daily Bonus
+      <span class="badge" id="dailyBadge" style="display:none;">!</span>
+    </button>
+    <button class="action-btn" id="adBtn" onclick="openAdModal()">
+      <span class="icon">📺</span>
+      Watch Ad
+      <div style="font-size:10px; opacity:0.6; margin-top:2px; letter-spacing:0; text-transform:none;" id="adInfo">+100 ◆</div>
+    </button>
   </div>
 
   <!-- Главный экран -->
@@ -76,102 +188,137 @@
 
     <div class="paytable">
       <div class="paytable-title">Paytable</div>
-      <div class="paytable-row">
-        <span class="paytable-symbols">🗝️ 🗝️ 🗝️</span>
-        <span class="paytable-mult">x50</span>
-      </div>
-      <div class="paytable-row">
-        <span class="paytable-symbols">💎 💎 💎</span>
-        <span class="paytable-mult">x20</span>
-      </div>
-      <div class="paytable-row">
-        <span class="paytable-symbols">👑 👑 👑</span>
-        <span class="paytable-mult">x15</span>
-      </div>
-      <div class="paytable-row">
-        <span class="paytable-symbols">7️⃣ 7️⃣ 7️⃣</span>
-        <span class="paytable-mult">x10</span>
-      </div>
-      <div class="paytable-row">
-        <span class="paytable-symbols">🍒 🍒 🍒</span>
-        <span class="paytable-mult">x5</span>
-      </div>
-      <div class="paytable-row">
-        <span class="paytable-symbols">Any two same</span>
-        <span class="paytable-mult">x2</span>
-      </div>
+      <div class="paytable-row"><span class="paytable-symbols">🗝️ 🗝️ 🗝️</span><span class="paytable-mult">x50</span></div>
+      <div class="paytable-row"><span class="paytable-symbols">💎 💎 💎</span><span class="paytable-mult">x20</span></div>
+      <div class="paytable-row"><span class="paytable-symbols">👑 👑 👑</span><span class="paytable-mult">x15</span></div>
+      <div class="paytable-row"><span class="paytable-symbols">7️⃣ 7️⃣ 7️⃣</span><span class="paytable-mult">x10</span></div>
+      <div class="paytable-row"><span class="paytable-symbols">🍒 🍒 🍒</span><span class="paytable-mult">x5</span></div>
+      <div class="paytable-row"><span class="paytable-symbols">Any two same</span><span class="paytable-mult">x2</span></div>
     </div>
   </div>
-<!-- Кнопка магазина -->
-<button id="shopBtn" onclick="openShop()">⭐ Shop</button>
-  <!-- ============ РЕФЕРАЛЬНАЯ СИСТЕМА ============ -->
+
+  <!-- Кнопки Shop / Invite -->
+  <button id="shopBtn" onclick="openShop()">⭐ Shop</button>
   <button id="inviteBtn" onclick="openReferralPage()">👥 Invite</button>
-<!-- ============ МАГАЗИН ============ -->
-<div id="shopModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
-  <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <h2 style="margin:0; color:#d4af37; font-family:'Cinzel',serif; letter-spacing:3px; font-size:20px;">⭐ SHOP</h2>
-      <button onclick="closeShop()" style="background:transparent; border:none; color:#d4af37; font-size:28px; cursor:pointer;">✕</button>
-    </div>
 
-    <div style="background:rgba(212,175,55,0.08); border-radius:12px; padding:15px; margin-bottom:20px; border:1px solid rgba(212,175,55,0.3); text-align:center;">
-      <div style="color:#d4af37; font-family:'Cinzel',serif; letter-spacing:2px; font-size:13px; text-transform:uppercase;">Buy chips with Telegram Stars</div>
-      <div style="font-size:12px; opacity:0.7; margin-top:5px;">Bigger pack = better bonus 🎁</div>
-    </div>
+  <!-- ============ DAILY BONUS MODAL ============ -->
+  <div id="dailyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
+    <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
 
-    <!-- Пакеты -->
-    <div id="shopPackages" style="display:flex; flex-direction:column; gap:12px;">
-      
-      <div onclick="buyPackage('pack_50')" class="shop-pack">
-        <div class="shop-pack-info">
-          <div class="shop-pack-chips">1,000 ◆</div>
-          <div class="shop-pack-bonus">Starter pack</div>
-        </div>
-        <div class="shop-pack-price">50 ⭐</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; color:#d4af37; font-family:'Cinzel',serif; letter-spacing:3px; font-size:20px;">🎁 DAILY BONUS</h2>
+        <button onclick="closeDailyBonus()" style="background:transparent; border:none; color:#d4af37; font-size:28px; cursor:pointer;">✕</button>
       </div>
 
-      <div onclick="buyPackage('pack_100')" class="shop-pack">
-        <div class="shop-pack-info">
-          <div class="shop-pack-chips">2,500 ◆</div>
-          <div class="shop-pack-bonus">+25% bonus 🎁</div>
-        </div>
-        <div class="shop-pack-price">100 ⭐</div>
+      <div style="background:rgba(212,175,55,0.08); border-radius:12px; padding:15px; margin-bottom:20px; border:1px solid rgba(212,175,55,0.3); text-align:center;">
+        <div style="color:#d4af37; font-family:'Cinzel',serif; letter-spacing:2px; font-size:13px; text-transform:uppercase;">Login every day for bigger rewards!</div>
+        <div style="font-size:12px; opacity:0.7; margin-top:5px;">Miss a day → streak resets 😢</div>
       </div>
 
-      <div onclick="buyPackage('pack_250')" class="shop-pack popular">
-        <div class="shop-pack-info">
-          <div class="shop-pack-chips">7,500 ◆</div>
-          <div class="shop-pack-bonus">+50% bonus 🔥 POPULAR</div>
-        </div>
-        <div class="shop-pack-price">250 ⭐</div>
+      <div class="daily-grid" id="dailyGrid">
+        <!-- Заполняется JS -->
       </div>
 
-      <div onclick="buyPackage('pack_500')" class="shop-pack">
-        <div class="shop-pack-info">
-          <div class="shop-pack-chips">20,000 ◆</div>
-          <div class="shop-pack-bonus">+100% bonus 💎</div>
-        </div>
-        <div class="shop-pack-price">500 ⭐</div>
+      <button id="dailyClaimBtn" onclick="claimDailyBonus()" style="width:100%; background:linear-gradient(135deg, #f4d03f, #d4af37); color:#000; border:none; border-radius:12px; padding:16px; font-family:'Cinzel',serif; font-size:14px; font-weight:700; letter-spacing:3px; cursor:pointer; text-transform:uppercase; margin-top:10px;">
+        Claim Bonus
+      </button>
+
+      <div id="dailyClaimedMsg" style="display:none; text-align:center; padding:14px; background:rgba(76,175,80,0.15); border:1px solid rgba(76,175,80,0.5); border-radius:12px; color:#4CAF50; font-family:'Cinzel',serif; letter-spacing:2px; margin-top:10px; font-size:13px;">
+        ✓ Already claimed today<br>
+        <span style="font-size:11px; opacity:0.8;">Come back tomorrow!</span>
       </div>
-
-      <div onclick="buyPackage('pack_1000')" class="shop-pack vip">
-        <div class="shop-pack-info">
-          <div class="shop-pack-chips">50,000 ◆</div>
-          <div class="shop-pack-bonus">+150% bonus 👑 VIP</div>
-        </div>
-        <div class="shop-pack-price">1000 ⭐</div>
-      </div>
-
-    </div>
-
-    <div style="margin-top:20px; padding:12px; background:rgba(0,0,0,0.5); border-radius:10px; font-size:11px; opacity:0.7; text-align:center; line-height:1.6;">
-      💳 Payment via Telegram Stars · Secure & instant<br>
-      Refunds available within 21 days
     </div>
   </div>
-</div>
-<!-- ============ КОНЕЦ МАГАЗИНА ============ -->
+
+  <!-- ============ AD MODAL ============ -->
+  <div id="adModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
+    <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; color:#d4af37; font-family:'Cinzel',serif; letter-spacing:3px; font-size:20px;">📺 WATCH AD</h2>
+        <button onclick="closeAdModal()" style="background:transparent; border:none; color:#d4af37; font-size:28px; cursor:pointer;">✕</button>
+      </div>
+
+      <div style="text-align:center; padding:30px 15px;">
+        <div style="font-size:60px; margin-bottom:15px;">🎬</div>
+        <div style="color:#d4af37; font-family:'Cinzel',serif; font-size:18px; letter-spacing:3px; margin-bottom:10px;">+100 ◆</div>
+        <div style="font-size:12px; opacity:0.7; margin-bottom:20px;">Watch a short ad and get 100 chips instantly!</div>
+
+        <div id="adStatus" style="background:rgba(0,0,0,0.5); padding:12px; border-radius:10px; margin-bottom:15px; font-size:12px; border:1px solid rgba(212,175,55,0.2);">
+          Loading...
+        </div>
+
+        <button id="watchAdBtn" onclick="watchAd()" style="width:100%; background:linear-gradient(135deg, #f4d03f, #d4af37); color:#000; border:none; border-radius:12px; padding:16px; font-family:'Cinzel',serif; font-size:14px; font-weight:700; letter-spacing:3px; cursor:pointer; text-transform:uppercase;">
+          ▶ Watch Ad
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SHOP ============ -->
+  <div id="shopModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
+    <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; color:#d4af37; font-family:'Cinzel',serif; letter-spacing:3px; font-size:20px;">⭐ SHOP</h2>
+        <button onclick="closeShop()" style="background:transparent; border:none; color:#d4af37; font-size:28px; cursor:pointer;">✕</button>
+      </div>
+
+      <div style="background:rgba(212,175,55,0.08); border-radius:12px; padding:15px; margin-bottom:20px; border:1px solid rgba(212,175,55,0.3); text-align:center;">
+        <div style="color:#d4af37; font-family:'Cinzel',serif; letter-spacing:2px; font-size:13px; text-transform:uppercase;">Buy chips with Telegram Stars</div>
+        <div style="font-size:12px; opacity:0.7; margin-top:5px;">Bigger pack = better bonus 🎁</div>
+      </div>
+
+      <div id="shopPackages" style="display:flex; flex-direction:column; gap:12px;">
+        <div onclick="buyPackage('pack_50')" class="shop-pack">
+          <div class="shop-pack-info">
+            <div class="shop-pack-chips">1,000 ◆</div>
+            <div class="shop-pack-bonus">Starter pack</div>
+          </div>
+          <div class="shop-pack-price">50 ⭐</div>
+        </div>
+
+        <div onclick="buyPackage('pack_100')" class="shop-pack">
+          <div class="shop-pack-info">
+            <div class="shop-pack-chips">2,500 ◆</div>
+            <div class="shop-pack-bonus">+25% bonus 🎁</div>
+          </div>
+          <div class="shop-pack-price">100 ⭐</div>
+        </div>
+
+        <div onclick="buyPackage('pack_250')" class="shop-pack popular">
+          <div class="shop-pack-info">
+            <div class="shop-pack-chips">7,500 ◆</div>
+            <div class="shop-pack-bonus">+50% bonus 🔥 POPULAR</div>
+          </div>
+          <div class="shop-pack-price">250 ⭐</div>
+        </div>
+
+        <div onclick="buyPackage('pack_500')" class="shop-pack">
+          <div class="shop-pack-info">
+            <div class="shop-pack-chips">20,000 ◆</div>
+            <div class="shop-pack-bonus">+100% bonus 💎</div>
+          </div>
+          <div class="shop-pack-price">500 ⭐</div>
+        </div>
+
+        <div onclick="buyPackage('pack_1000')" class="shop-pack vip">
+          <div class="shop-pack-info">
+            <div class="shop-pack-chips">50,000 ◆</div>
+            <div class="shop-pack-bonus">+150% bonus 👑 VIP</div>
+          </div>
+          <div class="shop-pack-price">1000 ⭐</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; padding:12px; background:rgba(0,0,0,0.5); border-radius:10px; font-size:11px; opacity:0.7; text-align:center; line-height:1.6;">
+        💳 Payment via Telegram Stars · Secure & instant<br>
+        Refunds available within 21 days
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INVITE ============ -->
   <div id="referralModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
     <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -194,12 +341,6 @@
           <div style="font-size:24px; font-weight:bold; color:#d4af37; font-family:'Cinzel',serif;" id="refCount">0</div>
           <div style="font-size:10px; opacity:0.7; letter-spacing:1px; text-transform:uppercase;">Friends</div>
         </div>
-        <div style="background:rgba(0,0,0,0.5); padding:12px; border-radius:10px; text-align:center; border:1px solid rgba(212,175,55,0.2);">
-          <div style="font-size:24px
-            Продолжаю с того места, где остановился ⬇️
-
-html
-
         <div style="background:rgba(0,0,0,0.5); padding:12px; border-radius:10px; text-align:center; border:1px solid rgba(212,175,55,0.2);">
           <div style="font-size:24px; font-weight:bold; color:#d4af37; font-family:'Cinzel',serif;" id="refLevel2">0</div>
           <div style="font-size:10px; opacity:0.7; letter-spacing:1px; text-transform:uppercase;">Lvl 2</div>
@@ -226,7 +367,6 @@ html
       </div>
     </div>
   </div>
-  <!-- ============ КОНЕЦ РЕФ-СИСТЕМЫ ============ -->
 
   <script src="app.js"></script>
 </body>
