@@ -12,23 +12,16 @@ if (tg) {
 }
 
 // Состояние
-let balance = 1000;
+let balance = 0;
 let currentBet = 50;
 let isSpinning = false;
 
-// Символы слотов и их веса (вероятности)
+// Символы слотов и их веса
 const symbols = ['🍒', '🍋', '🔔', '7️⃣', '👑', '💎', '🗝️'];
 const symbolWeights = [30, 25, 20, 12, 7, 4, 2];
 
-// Множители выигрышей
 const multipliers = {
-  '🗝️': 50,
-  '💎': 20,
-  '👑': 15,
-  '7️⃣': 10,
-  '🔔': 7,
-  '🍋': 6,
-  '🍒': 5
+  '🗝️': 50, '💎': 20, '👑': 15, '7️⃣': 10, '🔔': 7, '🍋': 6, '🍒': 5
 };
 
 // ============ USER ID ============
@@ -46,7 +39,6 @@ function getUserId() {
   return guestId;
 }
 
-// Получить случайный символ с учётом весов
 function getWeightedSymbol() {
   const total = symbolWeights.reduce((a, b) => a + b, 0);
   let rand = Math.random() * total;
@@ -57,13 +49,11 @@ function getWeightedSymbol() {
   return symbols[0];
 }
 
-// Обновить баланс на экране
 function updateBalance() {
   const balanceEl = document.getElementById('balance');
   if (balanceEl) balanceEl.textContent = balance.toLocaleString();
 }
 
-// Изменить ставку
 function changeBet(amount) {
   const newBet = currentBet + amount;
   if (newBet < 10) return;
@@ -73,19 +63,16 @@ function changeBet(amount) {
   document.getElementById('betAmount').textContent = currentBet;
 }
 
-// Открыть слоты
 function openSlots() {
   document.getElementById('mainScreen').classList.add('hidden');
   document.getElementById('slotsScreen').classList.remove('hidden');
 }
 
-// Назад в меню
 function backToMenu() {
   document.getElementById('slotsScreen').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
 }
 
-// Заглушки для будущих игр
 function openRoulette() {
   showResultMessage('🎡 Roulette coming soon...');
 }
@@ -114,7 +101,6 @@ function showResultMessage(text) {
   setTimeout(() => toast.remove(), 2000);
 }
 
-// Анимация вращения барабана
 function animateReel(reelIndex, finalSymbol, duration) {
   return new Promise(resolve => {
     const reel = document.getElementById('reel' + reelIndex);
@@ -122,10 +108,8 @@ function animateReel(reelIndex, finalSymbol, duration) {
     reel.classList.add('spinning');
     reel.classList.remove('winner');
 
-    let count = 0;
     const interval = setInterval(() => {
       inner.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-      count++;
     }, 80);
 
     setTimeout(() => {
@@ -137,7 +121,6 @@ function animateReel(reelIndex, finalSymbol, duration) {
   });
 }
 
-// Тактильная обратная связь
 function haptic(type) {
   try {
     if (tg && tg.HapticFeedback) {
@@ -148,11 +131,17 @@ function haptic(type) {
   } catch(e) {}
 }
 
-// Главная функция — крутить слоты
+// ============ SPIN ============
 async function spin() {
   if (isSpinning) return;
   if (balance < currentBet) {
     showResult(false, 0, 'Not enough chips');
+    // Показываем как добрать монеты
+    setTimeout(() => {
+      if (confirm('Not enough chips! Get more?\n\n📺 Watch ad (+100)\n⭐ Buy with Stars\n🎁 Daily bonus')) {
+        // Просто закроем — юзер увидит кнопки сверху
+      }
+    }, 500);
     return;
   }
 
@@ -222,11 +211,9 @@ async function spin() {
   spinBtn.textContent = 'Spin';
   isSpinning = false;
 
-  // Сохраняем баланс на сервер
   saveBalance();
 }
 
-// Показать результат
 function showResult(isWin, amount, message) {
   const result = document.getElementById('result');
   if (isWin) {
@@ -266,7 +253,6 @@ async function refreshBalance() {
     if (typeof data.balance === 'number') {
       balance = data.balance;
       updateBalance();
-      showToast('💰 Balance updated!');
     }
   } catch(e) {
     console.log('Refresh balance error:', e);
@@ -286,8 +272,290 @@ async function saveBalance() {
   }
 }
 
-// Инициализация — загружаем баланс с сервера
-initBalance();
+// ============ DAILY BONUS ============
+let dailyData = null;
+
+async function checkDailyStatus() {
+  try {
+    const userId = getUserId();
+    const res = await fetch('/api/daily/' + userId);
+    dailyData = await res.json();
+
+    const badge = document.getElementById('dailyBadge');
+    const btn = document.getElementById('dailyBtn');
+
+    if (dailyData.canClaim) {
+      if (badge) badge.style.display = 'block';
+      if (btn) btn.classList.add('daily-ready');
+    } else {
+      if (badge) badge.style.display = 'none';
+      if (btn) btn.classList.remove('daily-ready');
+    }
+  } catch(e) {
+    console.log('Daily status error:', e);
+  }
+}
+
+async function openDailyBonus() {
+  await checkDailyStatus();
+  renderDailyCalendar();
+  document.getElementById('dailyModal').style.display = 'block';
+}
+
+function closeDailyBonus() {
+  document.getElementById('dailyModal').style.display = 'none';
+}
+
+function renderDailyCalendar() {
+  if (!dailyData) return;
+
+  const grid = document.getElementById('dailyGrid');
+  const claimBtn = document.getElementById('dailyClaimBtn');
+  const claimedMsg = document.getElementById('dailyClaimedMsg');
+
+  const bonuses = dailyData.bonuses;
+  const streak = dailyData.streak;
+  const canClaim = dailyData.canClaim;
+  const currentDay = canClaim ? streak + 1 : streak;
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const day = i + 1;
+    const reward = bonuses[i];
+    let cls = '';
+    let check = '';
+
+    if (day < currentDay) {
+      cls = 'claimed';
+      check = '<div class="check">✓</div>';
+    } else if (day === currentDay && canClaim) {
+      cls = 'today';
+    } else if (day === currentDay && !canClaim) {
+      cls = 'claimed';
+      check = '<div class="check">✓</div>';
+    }
+
+    html += `
+      <div class="day-card ${cls} ${day === 7 ? 'day-7' : ''}">
+        ${check}
+        <div class="day-num">Day ${day}</div>
+        <div class="day-reward">+${reward} ◆</div>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
+
+  if (canClaim) {
+    claimBtn.style.display = 'block';
+    claimBtn.textContent = `Claim +${dailyData.nextReward} ◆`;
+    claimedMsg.style.display = 'none';
+  } else {
+    claimBtn.style.display = 'none';
+    claimedMsg.style.display = 'block';
+  }
+}
+
+async function claimDailyBonus() {
+  try {
+    const userId = getUserId();
+    const btn = document.getElementById('dailyClaimBtn');
+    btn.disabled = true;
+    btn.textContent = 'Claiming...';
+
+    const res = await fetch('/api/daily/' + userId, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.ok) {
+      balance = data.balance;
+      updateBalance();
+      haptic('win');
+      showToast(`🎁 +${data.reward} ◆ Day ${data.day}!`);
+
+      // Обновляем календарь
+      await checkDailyStatus();
+      renderDailyCalendar();
+
+      setTimeout(() => closeDailyBonus(), 2000);
+    } else {
+      showToast('❌ ' + (data.error || 'Error'));
+      btn.disabled = false;
+    }
+  } catch(e) {
+    console.log('Claim daily error:', e);
+    showToast('❌ Error');
+  }
+}
+
+// ============ AD (РЕКЛАМА) ============
+let adStatus = null;
+let cooldownInterval = null;
+
+async function checkAdStatus() {
+  try {
+    const userId = getUserId();
+    const res = await fetch('/api/ad/' + userId);
+    adStatus = await res.json();
+
+    const adInfo = document.getElementById('adInfo');
+    if (adInfo) {
+      if (adStatus.adsLeft === 0) {
+        adInfo.textContent = 'Tomorrow';
+      } else {
+        adInfo.textContent = `+${adStatus.reward} ◆`;
+      }
+    }
+  } catch(e) {
+    console.log('Ad status error:', e);
+  }
+}
+
+async function openAdModal() {
+  await checkAdStatus();
+  updateAdModalUI();
+  document.getElementById('adModal').style.display = 'block';
+}
+
+function closeAdModal() {
+  document.getElementById('adModal').style.display = 'none';
+  if (cooldownInterval) {
+    clearInterval(cooldownInterval);
+    cooldownInterval = null;
+  }
+}
+
+function updateAdModalUI() {
+  if (!adStatus) return;
+
+  const statusEl = document.getElementById('adStatus');
+  const btn = document.getElementById('watchAdBtn');
+
+  if (adStatus.adsLeft === 0) {
+    statusEl.innerHTML = `<div style="color:#ff6b6b;">⏰ Daily limit reached</div><div style="opacity:0.6; margin-top:4px;">Come back tomorrow!</div>`;
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.textContent = 'Limit reached';
+    return;
+  }
+
+  if (adStatus.cooldownLeft > 0) {
+    const sec = Math.ceil(adStatus.cooldownLeft / 1000);
+    statusEl.innerHTML = `<div>⏳ Wait <b style="color:#d4af37;">${sec}s</b> before next ad</div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.textContent = `Wait ${sec}s`;
+
+    // Запускаем таймер обратного отсчёта
+    if (cooldownInterval) clearInterval(cooldownInterval);
+    cooldownInterval = setInterval(async () => {
+      adStatus.cooldownLeft -= 1000;
+      if (adStatus.cooldownLeft <= 0) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+        await checkAdStatus();
+        updateAdModalUI();
+      } else {
+        const s = Math.ceil(adStatus.cooldownLeft / 1000);
+        statusEl.innerHTML = `<div>⏳ Wait <b style="color:#d4af37;">${s}s</b> before next ad</div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
+        btn.textContent = `Wait ${s}s`;
+      }
+    }, 1000);
+    return;
+  }
+
+  // Можно смотреть
+  statusEl.innerHTML = `<div style="color:#4CAF50;">✓ Ready to watch</div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.textContent = '▶ Watch Ad';
+}
+
+async function watchAd() {
+  const btn = document.getElementById('watchAdBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading ad...';
+
+  try {
+    // Пытаемся показать реальную рекламу Monetag
+    if (typeof window.show_9999999 === 'function') {
+      await window.show_9999999();
+    } else {
+      // Заглушка — имитируем просмотр рекламы 3 секунды
+      await showFakeAd();
+    }
+
+    // После просмотра — получаем награду
+    await claimAdReward();
+
+  } catch(e) {
+    console.log('Ad error:', e);
+    // Если реклама не загрузилась — показываем заглушку
+    await showFakeAd();
+    await claimAdReward();
+  }
+}
+
+function showFakeAd() {
+  return new Promise(resolve => {
+    // Создаём оверлей с "рекламой"
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:#000; z-index:99999;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      color:#fff;
+    `;
+
+    let count = 3;
+    overlay.innerHTML = `
+      <div style="font-size:80px; margin-bottom:20px;">📺</div>
+      <div style="font-family:'Cinzel',serif; letter-spacing:3px; color:#d4af37; font-size:18px; margin-bottom:30px;">AD PLAYING</div>
+      <div id="adCount" style="font-size:60px; font-weight:bold; color:#d4af37;">${count}</div>
+      <div style="margin-top:20px; opacity:0.5; font-size:12px;">Please wait...</div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const timer = setInterval(() => {
+      count--;
+      const c = document.getElementById('adCount');
+      if (c) c.textContent = count;
+      if (count <= 0) {
+        clearInterval(timer);
+        overlay.remove();
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
+async function claimAdReward() {
+  try {
+    const userId = getUserId();
+    const res = await fetch('/api/ad/' + userId, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.ok) {
+      balance = data.balance;
+      updateBalance();
+      haptic('win');
+      showToast(`🎬 +${data.reward} ◆`);
+
+      // Обновляем статус
+      await checkAdStatus();
+      updateAdModalUI();
+
+      setTimeout(() => closeAdModal(), 1500);
+    } else {
+      showToast('❌ ' + (data.error || 'Error'));
+      await checkAdStatus();
+      updateAdModalUI();
+    }
+  } catch(e) {
+    console.log('Claim ad error:', e);
+    showToast('❌ Error');
+  }
+}
 
 // ============ РЕФЕРАЛЬНАЯ СИСТЕМА ============
 let referralLink = '';
@@ -308,7 +576,6 @@ async function loadReferralData() {
     const response = await fetch('/api/user/' + userId);
     const data = await response.json();
 
-    // Формируем ссылку (берём username бота из URL)
     const botUsername = 'my_casino_2030_bot';
     referralLink = `https://t.me/${botUsername}?start=${userId}`;
 
@@ -369,6 +636,15 @@ function fallbackCopy() {
 }
 
 function shareReferralLink() {
+  if (!referralLink) return;
+  const text = '🗝️ Join Black Key Casino! Get 200 chips bonus with my link:';
+  const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink) + '&text=' + encodeURIComponent(text);
+  try {
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, '_bl
+                  function shareReferralLink() {
   if (!referralLink) return;
   const text = '🗝️ Join Black Key Casino! Get 200 chips bonus with my link:';
   const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink) + '&text=' + encodeURIComponent(text);
@@ -460,3 +736,13 @@ async function buyPackage(packageId) {
     showToast('❌ Error. Try again');
   }
 }
+
+// ============ ИНИЦИАЛИЗАЦИЯ ============
+initBalance();
+checkDailyStatus();
+checkAdStatus();
+
+// Обновляем статусы каждые 30 секунд (для таймера рекламы)
+setInterval(() => {
+  checkDailyStatus();
+}, 60000);
