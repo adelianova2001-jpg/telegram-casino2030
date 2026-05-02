@@ -102,38 +102,40 @@ bot.onText(/\/start(.*)/, (msg, match) => {
   const user = users[userId];
   const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
 
-  let welcomeText;
+    let welcomeText;
   if (isNewUser && user.referrer) {
     welcomeText =
-      `🎰 Привет, ${userName}!\n\n` +
-      `Добро пожаловать в Casino 2030! 🎉\n\n` +
-      `🎁 Ты пришёл по реферальной ссылке!\n` +
-      `💰 Бонус новичка: +200 фишек\n` +
-      `💎 Твой баланс: ${user.balance} фишек\n\n` +
-      `Нажми кнопку ниже, чтобы открыть казино!`;
+      `🗝️ BLACK KEY CASINO\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
+      `Welcome, ${userName}!\n\n` +
+      `🎁 You joined via referral link\n` +
+      `💰 Welcome bonus: +200 chips\n` +
+      `◆ Your balance: ${user.balance} chips\n\n` +
+      `Press the button below to enter the casino.`;
   } else if (isNewUser) {
     welcomeText =
-      `🎰 Привет, ${userName}!\n\n` +
-      `Добро пожаловать в Casino 2030! 🎉\n\n` +
-      `💰 Стартовый баланс: ${user.balance} фишек\n\n` +
-      `👥 Приглашай друзей и получай по 500 фишек за каждого!\n` +
-      `Твоя реф-ссылка:\n${referralLink}\n\n` +
-      `Нажми кнопку ниже, чтобы открыть казино!`;
+      `🗝️ BLACK KEY CASINO\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
+      `Welcome, ${userName}!\n\n` +
+      `◆ Starting balance: ${user.balance} chips\n\n` +
+      `👥 Invite friends — earn 500 chips per friend!\n\n` +
+      `Press the button below to enter the casino.`;
   } else {
     welcomeText =
-      `🎰 С возвращением, ${userName}!\n\n` +
-      `💰 Твой баланс: ${user.balance} фишек\n` +
-      `👥 Рефералов: ${user.referrals.length}\n` +
-      `💎 Заработано с друзей: ${user.referralEarnings} фишек\n\n` +
-      `Нажми кнопку, чтобы продолжить игру!`;
+      `🗝️ BLACK KEY CASINO\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
+      `Welcome back, ${userName}\n\n` +
+      `◆ Balance: ${user.balance} chips\n` +
+      `👥 Referrals: ${user.referrals.length}\n` +
+      `💎 Total earned: ${user.referralEarnings} chips\n\n` +
+      `Press the button to continue.`;
   }
-
   bot.sendMessage(chatId, welcomeText, {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🎰 Открыть казино', web_app: { url: webAppUrl } }],
-        [{ text: '👥 Пригласить друзей', callback_data: 'invite' }],
-        [{ text: '🏆 Топ рефереров', callback_data: 'top' }]
+        [{ text: '🎰 Enter Casino', web_app: { url: webAppUrl } }],
+        [{ text: '👥 Invite Friends', callback_data: 'invite' }],
+        [{ text: '🏆 Leaderboard', callback_data: 'top' }]
       ]
     }
   });
