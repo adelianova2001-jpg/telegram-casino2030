@@ -20,6 +20,58 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// ============ РЕФЕРАЛЬНАЯ СИСТЕМА API ============
+const fs = require('fs');
+const usersFile = require('path').join(__dirname, 'users.json');
+
+function loadUsersData() {
+  try {
+    if (fs.existsSync(usersFile)) {
+      return JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+    }
+  } catch (e) {}
+  return {};
+}
+
+// Получить реф-данные пользователя
+app.get('/api/referral/:userId', (req, res) => {
+  const users = loadUsersData();
+  const user = users[req.params.userId];
+  const botUsername = process.env.BOT_USERNAME || 'my_casino_2030_bot';
+  
+  if (!user) {
+    return res.json({
+      link: `https://t.me/${botUsername}?start=ref_${req.params.userId}`,
+      referrals: 0,
+      referralsLevel2: 0,
+      earnings: 0
+    });
+  }
+
+  res.json({
+    link: `https://t.me/${botUsername}?start=ref_${req.params.userId}`,
+    referrals: (user.referrals || []).length,
+    referralsLevel2: (user.referralsLevel2 || []).length,
+    earnings: user.referralEarnings || 0
+  });
+});
+
+// Топ рефереров
+app.get('/api/top-referrers', (req, res) => {
+  const users = loadUsersData();
+  const top = Object.values(users)
+    .filter(u => u.referrals && u.referrals.length > 0)
+    .sort((a, b) => b.referrals.length - a.referrals.length)
+    .slice(0, 10)
+    .map(u => ({
+      name: u.username ? '@' + u.username : u.name,
+      referrals: u.referrals.length,
+      earnings: u.referralEarnings || 0
+    }));
+  res.json(top);
+});
+// ============ КОНЕЦ РЕФ-СИСТЕМЫ ============
+
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(`✅ Сервер запущен на порту ${PORT}`);
