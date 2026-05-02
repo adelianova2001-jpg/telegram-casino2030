@@ -102,10 +102,76 @@
       </div>
     </div>
   </div>
-
+<!-- Кнопка магазина -->
+<button id="shopBtn" onclick="openShop()">⭐ Shop</button>
   <!-- ============ РЕФЕРАЛЬНАЯ СИСТЕМА ============ -->
   <button id="inviteBtn" onclick="openReferralPage()">👥 Invite</button>
+<!-- ============ МАГАЗИН ============ -->
+<div id="shopModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
+  <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0; color:#d4af37; font-family:'Cinzel',serif; letter-spacing:3px; font-size:20px;">⭐ SHOP</h2>
+      <button onclick="closeShop()" style="background:transparent; border:none; color:#d4af37; font-size:28px; cursor:pointer;">✕</button>
+    </div>
 
+    <div style="background:rgba(212,175,55,0.08); border-radius:12px; padding:15px; margin-bottom:20px; border:1px solid rgba(212,175,55,0.3); text-align:center;">
+      <div style="color:#d4af37; font-family:'Cinzel',serif; letter-spacing:2px; font-size:13px; text-transform:uppercase;">Buy chips with Telegram Stars</div>
+      <div style="font-size:12px; opacity:0.7; margin-top:5px;">Bigger pack = better bonus 🎁</div>
+    </div>
+
+    <!-- Пакеты -->
+    <div id="shopPackages" style="display:flex; flex-direction:column; gap:12px;">
+      
+      <div onclick="buyPackage('pack_50')" class="shop-pack">
+        <div class="shop-pack-info">
+          <div class="shop-pack-chips">1,000 ◆</div>
+          <div class="shop-pack-bonus">Starter pack</div>
+        </div>
+        <div class="shop-pack-price">50 ⭐</div>
+      </div>
+
+      <div onclick="buyPackage('pack_100')" class="shop-pack">
+        <div class="shop-pack-info">
+          <div class="shop-pack-chips">2,500 ◆</div>
+          <div class="shop-pack-bonus">+25% bonus 🎁</div>
+        </div>
+        <div class="shop-pack-price">100 ⭐</div>
+      </div>
+
+      <div onclick="buyPackage('pack_250')" class="shop-pack popular">
+        <div class="shop-pack-info">
+          <div class="shop-pack-chips">7,500 ◆</div>
+          <div class="shop-pack-bonus">+50% bonus 🔥 POPULAR</div>
+        </div>
+        <div class="shop-pack-price">250 ⭐</div>
+      </div>
+
+      <div onclick="buyPackage('pack_500')" class="shop-pack">
+        <div class="shop-pack-info">
+          <div class="shop-pack-chips">20,000 ◆</div>
+          <div class="shop-pack-bonus">+100% bonus 💎</div>
+        </div>
+        <div class="shop-pack-price">500 ⭐</div>
+      </div>
+
+      <div onclick="buyPackage('pack_1000')" class="shop-pack vip">
+        <div class="shop-pack-info">
+          <div class="shop-pack-chips">50,000 ◆</div>
+          <div class="shop-pack-bonus">+150% bonus 👑 VIP</div>
+        </div>
+        <div class="shop-pack-price">1000 ⭐</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:20px; padding:12px; background:rgba(0,0,0,0.5); border-radius:10px; font-size:11px; opacity:0.7; text-align:center; line-height:1.6;">
+      💳 Payment via Telegram Stars · Secure & instant<br>
+      Refunds available within 21 days
+    </div>
+  </div>
+</div>
+<!-- ============ КОНЕЦ МАГАЗИНА ============ -->
   <div id="referralModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:20px; box-sizing:border-box;">
     <div style="max-width:500px; margin:0 auto; background:linear-gradient(135deg, #1a1a1a, #0a0a0a); border-radius:20px; padding:25px; color:#e8e8e8; border:1px solid rgba(212,175,55,0.4);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
