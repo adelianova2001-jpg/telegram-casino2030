@@ -8,11 +8,11 @@ const webAppUrl = process.env.WEB_APP_URL;
 const botUsername = process.env.BOT_USERNAME || 'BlackKeyCasinoBot';
 
 if (!token) {
-  console.error('❌ BOT_TOKEN не задан в переменных окружения!');
+  console.error('❌ BOT_TOKEN не задан!');
   process.exit(1);
 }
 if (!webAppUrl) {
-  console.error('❌ WEB_APP_URL не задан в переменных окружения!');
+  console.error('❌ WEB_APP_URL не задан!');
   process.exit(1);
 }
 
@@ -27,7 +27,7 @@ function loadUsers() {
       return JSON.parse(fs.readFileSync(usersFile, 'utf8'));
     }
   } catch(e) {
-    console.log('Ошибка загрузки users:', e.message);
+    console.log('Load users error:', e.message);
   }
   return {};
 }
@@ -36,11 +36,11 @@ function saveUsers(users) {
   try {
     fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
   } catch(e) {
-    console.log('Ошибка сохранения users:', e.message);
+    console.log('Save users error:', e.message);
   }
 }
 
-// ============ ПАКЕТЫ TELEGRAM STARS ============
+// ============ ПАКЕТЫ STARS ============
 const STAR_PACKAGES = {
   'pack_50':   { stars: 50,   chips: 1000,  label: '1,000 chips' },
   'pack_100':  { stars: 100,  chips: 2500,  label: '2,500 chips +25%' },
@@ -77,9 +77,8 @@ bot.onText(/\/start(?:\s+(.+))?/, (msg, match) => {
     // Обработка реферала
     if (referralCode && referralCode !== userId && users[referralCode]) {
       users[userId].referrer = referralCode;
-      users[userId].balance += 200; // бонус новичку
+      users[userId].balance += 200;
 
-      // Реферер
       if (!users[referralCode].referrals.includes(userId)) {
         users[referralCode].referrals.push(userId);
         users[referralCode].balance += 500;
@@ -91,7 +90,7 @@ bot.onText(/\/start(?:\s+(.+))?/, (msg, match) => {
           `+500 chips credited to your balance 💰`
         ).catch(() => {});
 
-        // Реферер 2-го уровня
+        // 2-й уровень
         if (users[referralCode].referrer && users[users[referralCode].referrer]) {
           const lvl2 = users[referralCode].referrer;
           if (!users[lvl2].referralsLevel2.includes(userId)) {
@@ -100,15 +99,13 @@ bot.onText(/\/start(?:\s+(.+))?/, (msg, match) => {
             users[lvl2].referralEarnings += 100;
 
             bot.sendMessage(lvl2,
-              `💎 Level 2 referral!\n\n` +
-              `+100 chips credited to your balance`
+              `💎 Level 2 referral!\n\n+100 chips credited to your balance`
             ).catch(() => {});
           }
         }
       }
     }
   } else {
-    // Обновляем имя на случай изменения
     users[userId].name = userName;
     users[userId].username = username;
   }
@@ -187,20 +184,20 @@ function showShop(chatId) {
   });
 }
 
-// Отправить инвойс на оплату Stars
-function sendStarsInvoice(chatId, packageId) {
+// Отправить инвойс
+function sendStarsInvoice(chatId, userId, packageId) {
   const pkg = STAR_PACKAGES[packageId];
   if (!pkg) return;
 
   bot.sendInvoice(chatId,
-    pkg.label,                                // title
-    `Black Key Casino — ${pkg.label}`,        // description
-    packageId,                                 // payload
-    '',                                        // provider_token (пусто для Stars)
-    'XTR',                                     // currency = Stars
-    [{ label: pkg.label, amount: pkg.stars }]  // prices
+    pkg.label,
+    `Black Key Casino — ${pkg.label}`,
+    `${packageId}_${userId}`,
+    '',
+    'XTR',
+    [{ label: pkg.label, amount: pkg.stars }]
   ).catch(err => {
-    console.log('Ошибка инвойса:', err.message);
+    console.log('Invoice error:', err.message);
     bot.sendMessage(chatId, '❌ Failed to create invoice. Try again later.');
   });
 }
@@ -212,12 +209,22 @@ bot.on('pre_checkout_query', (query) => {
   });
 });
 
-// Successful payment
+// ============ УСПЕШНЫЙ ПЛАТЁЖ ============
 bot.on('successful_payment', (msg) => {
   const userId = msg.from.id.toString();
   const userName = msg.from.first_name || 'Player';
   const payment = msg.successful_payment;
-  const packageId = payment.invoice_payload;
+
+  // Парсим payload: "pack_50_123456789"
+  let packageId = payment.invoice_payload;
+  let buyerId = userId;
+
+  const parts = packageId.split('_');
+  if (parts.length >= 3 && parts[0] === 'pack') {
+    packageId = `${parts[0]}_${parts[1]}`;
+    buyerId = parts.slice(2).join('_');
+  }
+
   const pkg = STAR_PACKAGES[packageId];
 
   if (!pkg) {
@@ -226,9 +233,11 @@ bot.on('successful_payment', (msg) => {
   }
 
   const users = loadUsers();
-  if (!users[userId]) {
-    users[userId] = {
-      id: userId,
+  const targetUserId = users[buyerId] ? buyerId : userId;
+
+  if (!users[targetUserId]) {
+    users[targetUserId] = {
+      id: targetUserId,
       name: userName,
       username: msg.from.username || '',
       balance: 1000,
@@ -242,17 +251,17 @@ bot.on('successful_payment', (msg) => {
     };
   }
 
-  users[userId].balance += pkg.chips;
-  users[userId].totalPurchased = (users[userId].totalPurchased || 0) + pkg.chips;
-  users[userId].totalStarsSpent = (users[userId].totalStarsSpent || 0) + pkg.stars;
+  users[targetUserId].balance += pkg.chips;
+  users[targetUserId].totalPurchased = (users[targetUserId].totalPurchased || 0) + pkg.chips;
+  users[targetUserId].totalStarsSpent = (users[targetUserId].totalStarsSpent || 0) + pkg.stars;
 
   // Кэшбек 5% рефереру
-  if (users[userId].referrer && users[users[userId].referrer]) {
+  if (users[targetUserId].referrer && users[users[targetUserId].referrer]) {
     const cashback = Math.floor(pkg.chips * 0.05);
-    users[users[userId].referrer].balance += cashback;
-    users[users[userId].referrer].referralEarnings += cashback;
+    users[users[targetUserId].referrer].balance += cashback;
+    users[users[targetUserId].referrer].referralEarnings += cashback;
 
-    bot.sendMessage(users[userId].referrer,
+    bot.sendMessage(users[targetUserId].referrer,
       `💎 Referral cashback!\n\n` +
       `${userName} just bought chips.\n` +
       `+${cashback} chips credited to your balance (5%)`
@@ -265,7 +274,7 @@ bot.on('successful_payment', (msg) => {
     `✅ PAYMENT SUCCESSFUL\n` +
     `━━━━━━━━━━━━━━━━━\n\n` +
     `💎 +${pkg.chips.toLocaleString()} chips credited!\n` +
-    `◆ New balance: ${users[userId].balance.toLocaleString()} chips\n` +
+    `◆ New balance: ${users[targetUserId].balance.toLocaleString()} chips\n` +
     `⭐ Spent: ${pkg.stars} Stars\n\n` +
     `Good luck at the tables! 🗝️`,
     {
@@ -356,28 +365,24 @@ bot.onText(/\/help/, (msg) => {
   );
 });
 
-// ============ ОБРАБОТКА КНОПОК (callback_query) ============
+// ============ ОБРАБОТКА КНОПОК ============
 bot.on('callback_query', (query) => {
   const chatId = query.message.chat.id;
   const userId = query.from.id.toString();
 
-  // Магазин
   if (query.data === 'shop') {
     showShop(chatId);
   }
 
-  // Покупка пакета
   if (query.data && query.data.startsWith('buy_pack_')) {
     const packageId = query.data.replace('buy_', '');
-    sendStarsInvoice(chatId, packageId);
+    sendStarsInvoice(chatId, userId, packageId);
   }
 
-  // Реф-система
   if (query.data === 'invite') {
     showInvite(chatId, userId);
   }
 
-  // Топ
   if (query.data === 'top') {
     showTop(chatId);
   }
@@ -385,13 +390,13 @@ bot.on('callback_query', (query) => {
   bot.answerCallbackQuery(query.id).catch(() => {});
 });
 
-// ============ ОБРАБОТКА ДАННЫХ ОТ MINI APP ============
+// ============ ДАННЫЕ ОТ MINI APP ============
 bot.on('message', (msg) => {
   if (msg.web_app_data) {
     try {
       const data = JSON.parse(msg.web_app_data.data);
       if (data.action === 'buy' && data.package) {
-        sendStarsInvoice(msg.chat.id, data.package);
+        sendStarsInvoice(msg.chat.id, msg.from.id.toString(), data.package);
       }
     } catch(e) {
       console.log('Web app data error:', e.message);
@@ -399,7 +404,7 @@ bot.on('message', (msg) => {
   }
 });
 
-// ============ ОБРАБОТКА ОШИБОК ============
+// ============ ОШИБКИ ============
 bot.on('polling_error', (error) => {
   console.log('Polling error:', error.message);
 });
