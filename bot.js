@@ -2,108 +2,121 @@ const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
 const path = require('path');
 
+// ============ КОНФИГУРАЦИЯ ============
 const token = process.env.BOT_TOKEN;
-const webAppUrl = process.env.WEB_APP_URL || 'https://example.com';
-const botUsername = process.env.BOT_USERNAME || 'my_casino_2030_bot';
+const webAppUrl = process.env.WEB_APP_URL;
+const botUsername = process.env.BOT_USERNAME || 'BlackKeyCasinoBot';
+
+if (!token) {
+  console.error('❌ BOT_TOKEN не задан в переменных окружения!');
+  process.exit(1);
+}
+if (!webAppUrl) {
+  console.error('❌ WEB_APP_URL не задан в переменных окружения!');
+  process.exit(1);
+}
 
 const bot = new TelegramBot(token, { polling: true });
 
-// Путь к файлу с данными пользователей
-const dataFile = path.join(__dirname, 'users.json');
+// ============ ХРАНИЛИЩЕ ============
+const usersFile = path.join(__dirname, 'users.json');
 
-// Загружаем или создаём базу пользователей
 function loadUsers() {
   try {
-    if (fs.existsSync(dataFile)) {
-      return JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+    if (fs.existsSync(usersFile)) {
+      return JSON.parse(fs.readFileSync(usersFile, 'utf8'));
     }
-  } catch (e) {
-    
-    console.log('Ошибка загрузки users.json:', e.message);
+  } catch(e) {
+    console.log('Ошибка загрузки users:', e.message);
   }
   return {};
 }
 
 function saveUsers(users) {
   try {
-    fs.writeFileSync(dataFile, JSON.stringify(users, null, 2));
-  } catch (e) {
-    console.log('Ошибка сохранения users.json:', e.message);
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  } catch(e) {
+    console.log('Ошибка сохранения users:', e.message);
   }
 }
 
-// Команда /start с поддержкой реф-ссылок
-bot.onText(/\/start(.*)/, (msg, match) => {
-  const chatId = msg.chat.id;
+// ============ ПАКЕТЫ TELEGRAM STARS ============
+const STAR_PACKAGES = {
+  'pack_50':   { stars: 50,   chips: 1000,  label: '1,000 chips' },
+  'pack_100':  { stars: 100,  chips: 2500,  label: '2,500 chips +25%' },
+  'pack_250':  { stars: 250,  chips: 7500,  label: '7,500 chips +50%' },
+  'pack_500':  { stars: 500,  chips: 20000, label: '20,000 chips +100%' },
+  'pack_1000': { stars: 1000, chips: 50000, label: '50,000 chips +150%' }
+};
+
+// ============ КОМАНДА /start ============
+bot.onText(/\/start(?:\s+(.+))?/, (msg, match) => {
   const userId = msg.from.id.toString();
-  const userName = msg.from.first_name || 'Игрок';
-  const userNameFull = msg.from.username ? '@' + msg.from.username : userName;
-  const param = match[1].trim();
+  const userName = msg.from.first_name || 'Player';
+  const username = msg.from.username || '';
+  const referralCode = match[1];
 
   const users = loadUsers();
   const isNewUser = !users[userId];
 
-  // Если пользователь новый — создаём профиль
   if (isNewUser) {
     users[userId] = {
       id: userId,
       name: userName,
-      username: msg.from.username || '',
+      username: username,
       balance: 1000,
       referrer: null,
       referrals: [],
       referralsLevel2: [],
       referralEarnings: 0,
+      totalPurchased: 0,
+      totalStarsSpent: 0,
       joinedAt: Date.now()
     };
 
-    // Обработка реферальной ссылки
-    if (param.startsWith('ref_')) {
-      const referrerId = param.replace('ref_', '');
-      
-      if (referrerId !== userId && users[referrerId]) {
-        // Записываем реферера новичку
-        users[userId].referrer = referrerId;
-        users[userId].balance += 200; // Бонус новичку
+    // Обработка реферала
+    if (referralCode && referralCode !== userId && users[referralCode]) {
+      users[userId].referrer = referralCode;
+      users[userId].balance += 200; // бонус новичку
 
-        // Бонус пригласившему (1 уровень)
-        users[referrerId].referrals.push(userId);
-        users[referrerId].balance += 500;
-        users[referrerId].referralEarnings += 500;
+      // Реферер
+      if (!users[referralCode].referrals.includes(userId)) {
+        users[referralCode].referrals.push(userId);
+        users[referralCode].balance += 500;
+        users[referralCode].referralEarnings += 500;
 
-        // Бонус 2-го уровня (другу пригласившего)
-        const level2Id = users[referrerId].referrer;
-        if (level2Id && users[level2Id]) {
-          users[level2Id].referralsLevel2.push(userId);
-          users[level2Id].balance += 100;
-          users[level2Id].referralEarnings += 100;
-
-          // Уведомление 2-му уровню
-          bot.sendMessage(level2Id,
-            `🎁 Бонус 2-го уровня!\n\n` +
-            `Твой друг пригласил нового игрока — ${userName}!\n` +
-            `💰 Тебе начислено: +100 фишек`
-          ).catch(() => {});
-        }
-
-        // Уведомление пригласившему
-        bot.sendMessage(referrerId,
-          `🎉 Новый реферал!\n\n` +
-          `👤 ${userName} присоединился по твоей ссылке!\n` +
-          `💰 Тебе начислено: +500 фишек\n` +
-          `📊 Всего рефералов: ${users[referrerId].referrals.length}\n` +
-          `💎 Всего заработано: ${users[referrerId].referralEarnings} фишек`
+        bot.sendMessage(referralCode,
+          `🎉 New referral!\n\n` +
+          `${userName} joined via your link!\n` +
+          `+500 chips credited to your balance 💰`
         ).catch(() => {});
+
+        // Реферер 2-го уровня
+        if (users[referralCode].referrer && users[users[referralCode].referrer]) {
+          const lvl2 = users[referralCode].referrer;
+          if (!users[lvl2].referralsLevel2.includes(userId)) {
+            users[lvl2].referralsLevel2.push(userId);
+            users[lvl2].balance += 100;
+            users[lvl2].referralEarnings += 100;
+
+            bot.sendMessage(lvl2,
+              `💎 Level 2 referral!\n\n` +
+              `+100 chips credited to your balance`
+            ).catch(() => {});
+          }
+        }
       }
     }
-
-    saveUsers(users);
+  } else {
+    // Обновляем имя на случай изменения
+    users[userId].name = userName;
+    users[userId].username = username;
   }
 
   const user = users[userId];
-  const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
+  saveUsers(users);
 
-    let welcomeText;
+  let welcomeText;
   if (isNewUser && user.referrer) {
     welcomeText =
       `🗝️ BLACK KEY CASINO\n` +
@@ -131,143 +144,20 @@ bot.onText(/\/start(.*)/, (msg, match) => {
       `💎 Total earned: ${user.referralEarnings} chips\n\n` +
       `Press the button to continue.`;
   }
-  bot.sendMessage(chatId, welcomeText, {
+
+  bot.sendMessage(msg.chat.id, welcomeText, {
     reply_markup: {
       inline_keyboard: [
-  [{ text: '🎰 Enter Casino', web_app: { url: webAppUrl } }],
-  [{ text: '⭐ Buy Chips', callback_data: 'shop' }],
-  [{ text: '👥 Invite Friends', callback_data: 'invite' }],
-  [{ text: '🏆 Leaderboard', callback_data: 'top' }]
-]
+        [{ text: '🎰 Enter Casino', web_app: { url: webAppUrl } }],
+        [{ text: '⭐ Buy Chips', callback_data: 'shop' }],
+        [{ text: '👥 Invite Friends', callback_data: 'invite' }],
+        [{ text: '🏆 Leaderboard', callback_data: 'top' }]
+      ]
     }
   });
 });
 
-// Команда /invite — показать реф-ссылку
-bot.onText(/\/invite/, (msg) => {
-  const userId = msg.from.id.toString();
-  const users = loadUsers();
-  const user = users[userId] || { referrals: [], referralEarnings: 0 };
-  const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
-
-  bot.sendMessage(msg.chat.id,
-    `👥 Твоя реферальная программа\n\n` +
-    `🔗 Твоя ссылка:\n${referralLink}\n\n` +
-    `📊 Статистика:\n` +
-    `• Приглашено друзей: ${user.referrals.length}\n` +
-    `• Друзей 2 уровня: ${(user.referralsLevel2 || []).length}\n` +
-    `• Всего заработано: ${user.referralEarnings} фишек\n\n` +
-    `💰 Бонусы:\n` +
-    `• За друга: 500 фишек\n` +
-    `• За друга друга (2 уровень): 100 фишек\n` +
-    `• Новичку по ссылке: 200 фишек`,
-    {
-      reply_markup: {
-        inline_keyboard: [[
-          { text: '📤 Поделиться ссылкой', switch_inline_query: `Играй со мной в Casino 2030! 🎰\n${referralLink}` }
-        ]]
-      }
-    }
-  );
-});
-
-// Команда /top — топ рефереров
-bot.onText(/\/top/, (msg) => {
-  showTop(msg.chat.id);
-});
-
-function showTop(chatId) {
-  const users = loadUsers();
-  const top = Object.values(users)
-    .filter(u => u.referrals && u.referrals.length > 0)
-    .sort((a, b) => b.referrals.length - a.referrals.length)
-    .slice(0, 10);
-
-  if (top.length === 0) {
-    bot.sendMessage(chatId, '🏆 Топ рефереров пока пуст.\nСтань первым — пригласи друзей!');
-    return;
-  }
-
-  let text = '🏆 ТОП-10 рефереров:\n\n';
-  const medals = ['🥇', '🥈', '🥉'];
-  top.forEach((u, i) => {
-    const medal = medals[i] || `${i + 1}.`;
-    const name = u.username ? '@' + u.username : u.name;
-    text += `${medal} ${name} — ${u.referrals.length} друзей (${u.referralEarnings} фишек)\n`;
-  });
-
-  bot.sendMessage(chatId, text);
-}
-
-// Обработка callback-кнопок
-bot.on('callback_query', (query) => {
-  const chatId = query.message.chat.id;
-  const userId = query.from.id.toString();
-
-  if (query.data === 'invite') {
-    const users = loadUsers();
-    const user = users[userId] || { referrals: [], referralEarnings: 0, referralsLevel2: [] };
-    const referralLink = `https://t.me/${botUsername}?start=ref_${userId}`;
-
-    bot.sendMessage(chatId,
-      `👥 Приглашай друзей и зарабатывай!\n\n` +
-      `🔗 Твоя ссылка:\n\`${referralLink}\`\n\n` +
-      `📊 Статистика:\n` +
-      `• Друзей: ${user.referrals.length}\n` +
-      `• Друзей 2 уровня: ${(user.referralsLevel2 || []).length}\n` +
-      `• Заработано: ${user.referralEarnings} фишек\n\n` +
-      `💰 500 фишек за друга + 100 фишек за друга друга!`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [[
-            { text: '📤 Поделиться', switch_inline_query: `🎰 Играй со мной в Casino 2030!\n${referralLink}` }
-          ]]
-        }
-      }
-    );
-  }
-
-  if (query.data === 'top') {
-    showTop(chatId);
-  }
-  // Покупка пакета
-  if (query.data && query.data.startsWith('buy_pack_')) {
-    const packageId = query.data.replace('buy_', '');
-    sendStarsInvoice(chatId, packageId);
-  }
-
-  // Открыть магазин
-  if (query.data === 'shop') {
-    showShop(chatId);
-  }
-  bot.answerCallbackQuery(query.id);
-});
-
-// Команда /help
-bot.onText(/\/help/, (msg) => {
-  bot.sendMessage(msg.chat.id,
-    `🗝️ BLACK KEY · COMMANDS\n` +
-    `━━━━━━━━━━━━━━━━━\n\n` +
-    `/start — main menu\n` +
-    `/shop — buy chips ⭐\n` +
-    `/invite — referral program\n` +
-    `/top — leaderboard\n` +
-    `/help — this menu`
-  );
-});
-// ============ TELEGRAM STARS — МАГАЗИН ============
-
-// Пакеты монет
-const STAR_PACKAGES = {
-  'pack_50':   { stars: 50,   chips: 1000,  label: '1,000 chips' },
-  'pack_100':  { stars: 100,  chips: 2500,  label: '2,500 chips +25%' },
-  'pack_250':  { stars: 250,  chips: 7500,  label: '7,500 chips +50%' },
-  'pack_500':  { stars: 500,  chips: 20000, label: '20,000 chips +100%' },
-  'pack_1000': { stars: 1000, chips: 50000, label: '50,000 chips +150%' }
-};
-
-// Команда /shop — открыть магазин
+// ============ КОМАНДА /shop ============
 bot.onText(/\/shop/, (msg) => {
   showShop(msg.chat.id);
 });
@@ -303,26 +193,26 @@ function sendStarsInvoice(chatId, packageId) {
   if (!pkg) return;
 
   bot.sendInvoice(chatId,
-    `${pkg.label}`,                          // title
-    `Black Key Casino — ${pkg.label}`,       // description
-    packageId,                                // payload (наш ID для проверки)
-    '',                                       // provider_token (ПУСТО для Stars!)
-    'XTR',                                    // currency = XTR (Stars)
-    [{ label: pkg.label, amount: pkg.stars }] // prices
+    pkg.label,                                // title
+    `Black Key Casino — ${pkg.label}`,        // description
+    packageId,                                 // payload
+    '',                                        // provider_token (пусто для Stars)
+    'XTR',                                     // currency = Stars
+    [{ label: pkg.label, amount: pkg.stars }]  // prices
   ).catch(err => {
     console.log('Ошибка инвойса:', err.message);
     bot.sendMessage(chatId, '❌ Failed to create invoice. Try again later.');
   });
 }
 
-// Pre-checkout: подтверждение перед оплатой
+// Pre-checkout
 bot.on('pre_checkout_query', (query) => {
   bot.answerPreCheckoutQuery(query.id, true).catch(err => {
     console.log('Pre-checkout error:', err.message);
   });
 });
 
-// Successful payment: оплата прошла
+// Successful payment
 bot.on('successful_payment', (msg) => {
   const userId = msg.from.id.toString();
   const userName = msg.from.first_name || 'Player';
@@ -335,7 +225,6 @@ bot.on('successful_payment', (msg) => {
     return;
   }
 
-  // Начисляем фишки
   const users = loadUsers();
   if (!users[userId]) {
     users[userId] = {
@@ -357,13 +246,146 @@ bot.on('successful_payment', (msg) => {
   users[userId].totalPurchased = (users[userId].totalPurchased || 0) + pkg.chips;
   users[userId].totalStarsSpent = (users[userId].totalStarsSpent || 0) + pkg.stars;
 
-  // Реферальный кэшбек 5% рефереру
+  // Кэшбек 5% рефереру
   if (users[userId].referrer && users[users[userId].referrer]) {
-    const c
-bot.on('polling_error', (error) => {
-  console.log('Ошибка polling:', error.message);
+    const cashback = Math.floor(pkg.chips * 0.05);
+    users[users[userId].referrer].balance += cashback;
+    users[users[userId].referrer].referralEarnings += cashback;
+
+    bot.sendMessage(users[userId].referrer,
+      `💎 Referral cashback!\n\n` +
+      `${userName} just bought chips.\n` +
+      `+${cashback} chips credited to your balance (5%)`
+    ).catch(() => {});
+  }
+
+  saveUsers(users);
+
+  bot.sendMessage(msg.chat.id,
+    `✅ PAYMENT SUCCESSFUL\n` +
+    `━━━━━━━━━━━━━━━━━\n\n` +
+    `💎 +${pkg.chips.toLocaleString()} chips credited!\n` +
+    `◆ New balance: ${users[userId].balance.toLocaleString()} chips\n` +
+    `⭐ Spent: ${pkg.stars} Stars\n\n` +
+    `Good luck at the tables! 🗝️`,
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: '🎰 Play Now', web_app: { url: webAppUrl } }
+        ]]
+      }
+    }
+  );
 });
-// Обработка данных от Mini App (нажатие "Купить")
+
+// ============ КОМАНДА /invite ============
+bot.onText(/\/invite/, (msg) => {
+  showInvite(msg.chat.id, msg.from.id.toString());
+});
+
+function showInvite(chatId, userId) {
+  const users = loadUsers();
+  const user = users[userId];
+
+  if (!user) {
+    bot.sendMessage(chatId, 'Use /start first');
+    return;
+  }
+
+  const refLink = `https://t.me/${botUsername}?start=${userId}`;
+
+  const text =
+    `👥 REFERRAL PROGRAM\n` +
+    `━━━━━━━━━━━━━━━━━\n\n` +
+    `💰 Earn chips by inviting friends!\n\n` +
+    `🎁 REWARDS:\n` +
+    `• 500 chips per friend\n` +
+    `• 100 chips per friend of friend\n` +
+    `• 5% cashback from their purchases\n\n` +
+    `📊 YOUR STATS:\n` +
+    `• Friends: ${user.referrals.length}\n` +
+    `• Level 2: ${user.referralsLevel2.length}\n` +
+    `• Total earned: ${user.referralEarnings} chips\n\n` +
+    `🔗 Your link:\n${refLink}`;
+
+  bot.sendMessage(chatId, text, {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📤 Share Link', url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('🗝️ Join Black Key Casino! Get 200 chips bonus:')}` }]
+      ]
+    }
+  });
+}
+
+// ============ КОМАНДА /top ============
+bot.onText(/\/top/, (msg) => {
+  showTop(msg.chat.id);
+});
+
+function showTop(chatId) {
+  const users = loadUsers();
+  const arr = Object.values(users)
+    .sort((a, b) => b.referrals.length - a.referrals.length)
+    .slice(0, 10);
+
+  if (arr.length === 0) {
+    bot.sendMessage(chatId, '🏆 Leaderboard is empty. Be the first!');
+    return;
+  }
+
+  const medals = ['🥇', '🥈', '🥉'];
+  let text = `🏆 LEADERBOARD\n━━━━━━━━━━━━━━━━━\n\n`;
+  arr.forEach((u, i) => {
+    const medal = medals[i] || `${i + 1}.`;
+    text += `${medal} ${u.name} — ${u.referrals.length} refs · ${u.referralEarnings} chips\n`;
+  });
+
+  bot.sendMessage(chatId, text);
+}
+
+// ============ КОМАНДА /help ============
+bot.onText(/\/help/, (msg) => {
+  bot.sendMessage(msg.chat.id,
+    `🗝️ BLACK KEY · COMMANDS\n` +
+    `━━━━━━━━━━━━━━━━━\n\n` +
+    `/start — main menu\n` +
+    `/shop — buy chips ⭐\n` +
+    `/invite — referral program\n` +
+    `/top — leaderboard\n` +
+    `/help — this menu`
+  );
+});
+
+// ============ ОБРАБОТКА КНОПОК (callback_query) ============
+bot.on('callback_query', (query) => {
+  const chatId = query.message.chat.id;
+  const userId = query.from.id.toString();
+
+  // Магазин
+  if (query.data === 'shop') {
+    showShop(chatId);
+  }
+
+  // Покупка пакета
+  if (query.data && query.data.startsWith('buy_pack_')) {
+    const packageId = query.data.replace('buy_', '');
+    sendStarsInvoice(chatId, packageId);
+  }
+
+  // Реф-система
+  if (query.data === 'invite') {
+    showInvite(chatId, userId);
+  }
+
+  // Топ
+  if (query.data === 'top') {
+    showTop(chatId);
+  }
+
+  bot.answerCallbackQuery(query.id).catch(() => {});
+});
+
+// ============ ОБРАБОТКА ДАННЫХ ОТ MINI APP ============
 bot.on('message', (msg) => {
   if (msg.web_app_data) {
     try {
@@ -376,4 +398,10 @@ bot.on('message', (msg) => {
     }
   }
 });
-console.log('🤖 Бот запущен с реферальной системой!');
+
+// ============ ОБРАБОТКА ОШИБОК ============
+bot.on('polling_error', (error) => {
+  console.log('Polling error:', error.message);
+});
+
+console.log('🤖 Bot started — Black Key Casino');
