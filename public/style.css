@@ -508,3 +508,103 @@ body {
   .reel { height: 90px; font-size: 50px; }
   .spin-btn { font-size: 16px; letter-spacing: 4px; }
 }
+/* ============ МАГАЗИН ============ */
+#shopBtn {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 20px !important;
+  background: linear-gradient(135deg, #f4d03f, #d4af37, #b8860b) !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 14px 22px !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.5) !important;
+  z-index: 999 !important;
+}
+
+.shop-pack {
+  background: linear-gradient(135deg, #1f1f1f, #141414);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-pack:active {
+  transform: scale(0.98);
+  border-color: #d4af37;
+}
+
+.shop-pack:hover {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+}
+
+.shop-pack.popular {
+  border-color: rgba(212, 175, 55, 0.6);
+  background: linear-gradient(135deg, #2a2418, #141414);
+}
+
+.shop-pack.popular::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.15), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.shop-pack.vip {
+  border-color: #d4af37;
+  background: linear-gradient(135deg, #2a2418, #1a1408);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.25);
+}
+
+.shop-pack-info {
+  flex: 1;
+}
+
+.shop-pack-chips {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #d4af37;
+  letter-spacing: 1px;
+}
+
+.shop-pack-bonus {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.shop-pack-price {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #d4af37;
+  white-space: nowrap;
+}
