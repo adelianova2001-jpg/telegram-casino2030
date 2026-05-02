@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -69,6 +70,42 @@ app.get('/api/top-referrers', (req, res) => {
       earnings: u.referralEarnings || 0
     }));
   res.json(top);
+});
+
+// Получить баланс пользователя
+app.get('/api/balance/:userId', (req, res) => {
+  const users = loadUsersData();
+  const user = users[req.params.userId];
+  res.json({ balance: user ? user.balance : 1000 });
+});
+
+// Сохранить новый баланс (после игры)
+app.post('/api/balance/:userId', express.json(), (req, res) => {
+  const fs = require('fs');
+  const usersFile = require('path').join(__dirname, 'users.json');
+  const users = loadUsersData();
+  const userId = req.params.userId;
+
+  if (!users[userId]) {
+    users[userId] = {
+      id: userId,
+      name: 'Player',
+      username: '',
+      balance: 1000,
+      referrer: null,
+      referrals: [],
+      referralsLevel2: [],
+      referralEarnings: 0,
+      joinedAt: Date.now()
+    };
+  }
+
+  if (typeof req.body.balance === 'number') {
+    users[userId].balance = req.body.balance;
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  }
+
+  res.json({ ok: true, balance: users[userId].balance });
 });
 // ============ КОНЕЦ РЕФ-СИСТЕМЫ ============
 
