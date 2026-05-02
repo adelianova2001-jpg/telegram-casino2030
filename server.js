@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
-// Полифилл fetch для Node.js < 18
 const fetch = global.fetch || ((...args) => import('node-fetch').then(({default: f}) => f(...args)));
 
 const app = express();
@@ -42,9 +41,53 @@ const STAR_PACKAGES = {
   'pack_1000': { stars: 1000, chips: 50000, label: '50,000 chips +150%' }
 };
 
-// ============ API: РЕФЕРАЛЬНАЯ СИСТЕМА ============
+// ============ ЕЖЕДНЕВНЫЙ БОНУС ============
+const DAILY_BONUSES = [200, 250, 300, 400, 500, 700, 1000];
 
-// Получить инфо о пользователе
+// ============ РЕКЛАМА ============
+const AD_REWARD = 100;
+const AD_COOLDOWN_MS = 30 * 1000; // 30 секунд между рекламами
+const AD_DAILY_LIMIT = 20; // максимум 20 реклам в сутки
+
+// ============ ВСПОМОГАТЕЛЬНЫЕ ============
+function getDayKey(timestamp) {
+  const d = new Date(timestamp);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()+1}-${d.getUTCDate()}`;
+}
+
+function ensureUser(users, userId) {
+  if (!users[userId]) {
+    users[userId] = {
+      id: userId,
+      name: 'Player',
+      username: '',
+      balance: 1000,
+      referrer: null,
+      referrals: [],
+      referralsLevel2: [],
+      referralEarnings: 0,
+      totalPurchased: 0,
+      totalStarsSpent: 0,
+      joinedAt: Date.now(),
+      // Ежедневный бонус
+      lastDailyBonus: 0,
+      dailyStreak: 0,
+      // Реклама
+      lastAdTime: 0,
+      adsToday: 0,
+      adsLastDay: ''
+    };
+  }
+  // Миграция старых пользователей
+  if (typeof users[userId].lastDailyBonus === 'undefined') users[userId].lastDailyBonus = 0;
+  if (typeof users[userId].dailyStreak === 'undefined') users[userId].dailyStreak = 0;
+  if (typeof users[userId].lastAdTime === 'undefined') users[userId].lastAdTime = 0;
+  if (typeof users[userId].adsToday === 'undefined') users[userId].adsToday = 0;
+  if (typeof users[userId].adsLastDay === 'undefined') users[userId].adsLastDay = '';
+}
+
+// ============ API: ПОЛЬЗОВАТЕЛЬ ============
+
 app.get('/api/user/:userId', (req, res) => {
   const users = loadUsersData();
   const user = users[req.params.userId];
@@ -62,7 +105,6 @@ app.get('/api/user/:userId', (req, res) => {
   });
 });
 
-// Получить топ рефереров
 app.get('/api/top-referrers', (req, res) => {
   const users = loadUsersData();
   const arr = Object.values(users)
@@ -78,11 +120,19 @@ app.get('/api/top-referrers', (req, res) => {
 
 // ============ API: БАЛАНС ============
 
-// Получить баланс
+// Получить баланс (для существующих юзеров)
 app.get('/api/balance/:userId', (req, res) => {
   const users = loadUsersData();
   const user = users[req.params.userId];
-  res.json({ balance: user ? user.balance : 1000 });
+
+  if (!user) {
+    // Новый юзер — создаём со стартовым балансом 1000
+    ensureUser(users, req.params.userId);
+    saveUsersData(users);
+    return res.json({ balance: 1000, isNew: true });
+  }
+
+  res.json({ balance: user.balance, isNew: false });
 });
 
 // Сохранить баланс
@@ -90,23 +140,9 @@ app.post('/api/balance/:userId', (req, res) => {
   const users = loadUsersData();
   const userId = req.params.userId;
 
-  if (!users[userId]) {
-    users[userId] = {
-      id: userId,
-      name: 'Player',
-      username: '',
-      balance: 1000,
-      referrer: null,
-      referrals: [],
-      referralsLevel2: [],
-      referralEarnings: 0,
-      totalPurchased: 0,
-      totalStarsSpent: 0,
-      joinedAt: Date.now()
-    };
-  }
+  ensureUser(users, userId);
 
-  if (typeof req.body.balance === 'number') {
+  if (typeof req.body.balance === 'number' && req.body.balance >= 0) {
     users[userId].balance = req.body.balance;
     saveUsersData(users);
   }
@@ -114,7 +150,160 @@ app.post('/api/balance/:userId', (req, res) => {
   res.json({ ok: true, balance: users[userId].balance });
 });
 
-// ============ API: СОЗДАНИЕ ИНВОЙСА STARS ============
+// ============ API: ЕЖЕДНЕВНЫЙ БОНУС ============
+
+// Получить статус ежедневного бонуса
+app.get('/api/daily/:userId', (req, res) => {
+  const users = loadUsersData();
+  const userId = req.params.userId;
+  ensureUser(users, userId);
+  saveUsersData(users);
+
+  const user = users[userId];
+  const now = Date.now();
+  const lastDay = user.lastDailyBonus ? getDayKey(user.lastDailyBonus) : null;
+  const today = getDayKey(now);
+
+  const canClaim = lastDay !== today;
+
+  // Проверка стрика — если пропустил день, обнуляем
+  let streak = user.dailyStreak || 0;
+  if (lastDay) {
+    const yesterday = getDayKey(now - 24 * 60 * 60 * 1000);
+    if (lastDay !== today && lastDay !== yesterday) {
+      streak = 0; // пропустил день
+    }
+  }
+
+  // Какой день стрика сейчас (1-7)
+  const nextDay = canClaim ? Math.min(streak + 1, 7) : streak;
+  const nextReward = canClaim ? DAILY_BONUSES[Math.min(streak, 6)] : 0;
+
+  res.json({
+    canClaim,
+    streak: streak,
+    nextDay: nextDay,
+    nextReward: nextReward,
+    bonuses: DAILY_BONUSES,
+    todayClaimed: !canClaim
+  });
+});
+
+// Забрать ежедневный бонус
+app.post('/api/daily/:userId', (req, res) => {
+  const users = loadUsersData();
+  const userId = req.params.userId;
+  ensureUser(users, userId);
+
+  const user = users[userId];
+  const now = Date.now();
+  const lastDay = user.lastDailyBonus ? getDayKey(user.lastDailyBonus) : null;
+  const today = getDayKey(now);
+
+  if (lastDay === today) {
+    return res.status(400).json({ error: 'Already claimed today', balance: user.balance });
+  }
+
+  // Проверка стрика
+  const yesterday = getDayKey(now - 24 * 60 * 60 * 1000);
+  let streak = user.dailyStreak || 0;
+  if (lastDay && lastDay !== yesterday) {
+    streak = 0; // пропустил — стрик сбросился
+  }
+  if (streak >= 7) streak = 0; // после 7 дней начинаем новый цикл
+
+  const reward = DAILY_BONUSES[streak];
+  user.balance += reward;
+  user.dailyStreak = streak + 1;
+  user.lastDailyBonus = now;
+
+  saveUsersData(users);
+
+  res.json({
+    ok: true,
+    reward: reward,
+    balance: user.balance,
+    streak: user.dailyStreak,
+    day: streak + 1
+  });
+});
+
+// ============ API: РЕКЛАМА ============
+
+app.get('/api/ad/:userId', (req, res) => {
+  const users = loadUsersData();
+  const userId = req.params.userId;
+  ensureUser(users, userId);
+
+  const user = users[userId];
+  const now = Date.now();
+  const today = getDayKey(now);
+
+  // Сброс счётчика на новый день
+  if (user.adsLastDay !== today) {
+    user.adsToday = 0;
+    user.adsLastDay = today;
+    saveUsersData(users);
+  }
+
+  const cooldownLeft = Math.max(0, AD_COOLDOWN_MS - (now - user.lastAdTime));
+  const adsLeft = Math.max(0, AD_DAILY_LIMIT - user.adsToday);
+
+  res.json({
+    canWatch: cooldownLeft === 0 && adsLeft > 0,
+    cooldownLeft: cooldownLeft,
+    adsLeft: adsLeft,
+    adsToday: user.adsToday,
+    dailyLimit: AD_DAILY_LIMIT,
+    reward: AD_REWARD
+  });
+});
+
+app.post('/api/ad/:userId', (req, res) => {
+  const users = loadUsersData();
+  const userId = req.params.userId;
+  ensureUser(users, userId);
+
+  const user = users[userId];
+  const now = Date.now();
+  const today = getDayKey(now);
+
+  // Сброс счётчика на новый день
+  if (user.adsLastDay !== today) {
+    user.adsToday = 0;
+    user.adsLastDay = today;
+  }
+
+  // Проверка кулдауна
+  if (now - user.lastAdTime < AD_COOLDOWN_MS) {
+    return res.status(400).json({
+      error: 'Cooldown',
+      cooldownLeft: AD_COOLDOWN_MS - (now - user.lastAdTime)
+    });
+  }
+
+  // Проверка дневного лимита
+  if (user.adsToday >= AD_DAILY_LIMIT) {
+    return res.status(400).json({ error: 'Daily limit reached' });
+  }
+
+  user.balance += AD_REWARD;
+  user.lastAdTime = now;
+  user.adsToday += 1;
+  user.adsLastDay = today;
+
+  saveUsersData(users);
+
+  res.json({
+    ok: true,
+    reward: AD_REWARD,
+    balance: user.balance,
+    adsLeft: AD_DAILY_LIMIT - user.adsToday
+  });
+});
+
+// ============ API: ИНВОЙС STARS ============
+
 app.post('/api/create-invoice', async (req, res) => {
   try {
     const { packageId, userId } = req.body;
