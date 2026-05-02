@@ -130,3 +130,38 @@
         </div>
         <div style="background:rgba(0,0,0,0.5); padding:12px; border-radius:10px; text-align:center; border:1px solid rgba(212,175,55,0.2);">
           <div style="font-size:24px
+            Продолжаю с того места, где остановился ⬇️
+
+html
+
+        <div style="background:rgba(0,0,0,0.5); padding:12px; border-radius:10px; text-align:center; border:1px solid rgba(212,175,55,0.2);">
+          <div style="font-size:24px; font-weight:bold; color:#d4af37; font-family:'Cinzel',serif;" id="refLevel2">0</div>
+          <div style="font-size:10px; opacity:0.7; letter-spacing:1px; text-transform:uppercase;">Lvl 2</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.5); padding:12px; border-radius:10px; text-align:center; border:1px solid rgba(212,175,55,0.2);">
+          <div style="font-size:24px; font-weight:bold; color:#d4af37; font-family:'Cinzel',serif;" id="refEarnings">0</div>
+          <div style="font-size:10px; opacity:0.7; letter-spacing:1px; text-transform:uppercase;">Earned</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <div style="font-size:11px; opacity:0.7; margin-bottom:8px; letter-spacing:2px; text-transform:uppercase;">Your Link</div>
+        <div style="background:rgba(0,0,0,0.6); padding:12px; border-radius:10px; font-size:12px; word-break:break-all; border:1px solid rgba(212,175,55,0.3); color:#d4af37;" id="refLink">Loading...</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+        <button onclick="copyReferralLink()" style="background:linear-gradient(135deg, #2a2a2a, #1a1a1a); color:#d4af37; border:1px solid rgba(212,175,55,0.4); border-radius:10px; padding:14px; font-family:'Cinzel',serif; font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer; text-transform:uppercase;">📋 Copy</button>
+        <button onclick="shareReferralLink()" style="background:linear-gradient(135deg, #f4d03f, #d4af37); color:#000; border:none; border-radius:10px; padding:14px; font-family:'Cinzel',serif; font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer; text-transform:uppercase;">📤 Share</button>
+      </div>
+
+      <div>
+        <div style="color:#d4af37; font-weight:700; margin-bottom:10px; font-family:'Cinzel',serif; letter-spacing:3px; text-align:center;">🏆 LEADERBOARD</div>
+        <div id="topReferrers" style="background:rgba(0,0,0,0.5); border-radius:10px; padding:12px; font-size:13px; border:1px solid rgba(212,175,55,0.2);">Loading...</div>
+      </div>
+    </div>
+  </div>
+  <!-- ============ КОНЕЦ РЕФ-СИСТЕМЫ ============ -->
+
+  <script src="app.js"></script>
+</body>
+</html>
