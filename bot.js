@@ -133,10 +133,11 @@ bot.onText(/\/start(.*)/, (msg, match) => {
   bot.sendMessage(chatId, welcomeText, {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🎰 Enter Casino', web_app: { url: webAppUrl } }],
-        [{ text: '👥 Invite Friends', callback_data: 'invite' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'top' }]
-      ]
+  [{ text: '🎰 Enter Casino', web_app: { url: webAppUrl } }],
+  [{ text: '⭐ Buy Chips', callback_data: 'shop' }],
+  [{ text: '👥 Invite Friends', callback_data: 'invite' }],
+  [{ text: '🏆 Leaderboard', callback_data: 'top' }]
+]
     }
   });
 });
@@ -229,22 +230,135 @@ bot.on('callback_query', (query) => {
   if (query.data === 'top') {
     showTop(chatId);
   }
+  // Покупка пакета
+  if (query.data && query.data.startsWith('buy_pack_')) {
+    const packageId = query.data.replace('buy_', '');
+    sendStarsInvoice(chatId, packageId);
+  }
 
+  // Открыть магазин
+  if (query.data === 'shop') {
+    showShop(chatId);
+  }
   bot.answerCallbackQuery(query.id);
 });
 
 // Команда /help
 bot.onText(/\/help/, (msg) => {
   bot.sendMessage(msg.chat.id,
-    `ℹ️ Команды:\n\n` +
-    `/start — открыть казино\n` +
-    `/invite — реферальная программа\n` +
-    `/top — топ рефереров\n` +
-    `/help — справка\n\n` +
-    `🎰 Удачи!`
+    `🗝️ BLACK KEY · COMMANDS\n` +
+    `━━━━━━━━━━━━━━━━━\n\n` +
+    `/start — main menu\n` +
+    `/shop — buy chips ⭐\n` +
+    `/invite — referral program\n` +
+    `/top — leaderboard\n` +
+    `/help — this menu`
   );
 });
+// ============ TELEGRAM STARS — МАГАЗИН ============
 
+// Пакеты монет
+const STAR_PACKAGES = {
+  'pack_50':   { stars: 50,   chips: 1000,  label: '1,000 chips' },
+  'pack_100':  { stars: 100,  chips: 2500,  label: '2,500 chips +25%' },
+  'pack_250':  { stars: 250,  chips: 7500,  label: '7,500 chips +50%' },
+  'pack_500':  { stars: 500,  chips: 20000, label: '20,000 chips +100%' },
+  'pack_1000': { stars: 1000, chips: 50000, label: '50,000 chips +150%' }
+};
+
+// Команда /shop — открыть магазин
+bot.onText(/\/shop/, (msg) => {
+  showShop(msg.chat.id);
+});
+
+function showShop(chatId) {
+  const text =
+    `🗝️ BLACK KEY · SHOP\n` +
+    `━━━━━━━━━━━━━━━━━\n\n` +
+    `Buy chips with Telegram Stars ⭐\n\n` +
+    `🎁 The bigger the pack — the better the bonus!\n\n` +
+    `◆ 50 ⭐ → 1,000 chips\n` +
+    `◆ 100 ⭐ → 2,500 chips (+25%)\n` +
+    `◆ 250 ⭐ → 7,500 chips (+50%)\n` +
+    `◆ 500 ⭐ → 20,000 chips (+100%)\n` +
+    `◆ 1000 ⭐ → 50,000 chips (+150%)`;
+
+  bot.sendMessage(chatId, text, {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '◆ 1,000 chips · 50 ⭐', callback_data: 'buy_pack_50' }],
+        [{ text: '◆ 2,500 chips · 100 ⭐ (+25%)', callback_data: 'buy_pack_100' }],
+        [{ text: '◆ 7,500 chips · 250 ⭐ (+50%)', callback_data: 'buy_pack_250' }],
+        [{ text: '◆ 20,000 chips · 500 ⭐ (+100%)', callback_data: 'buy_pack_500' }],
+        [{ text: '◆ 50,000 chips · 1000 ⭐ (+150%)', callback_data: 'buy_pack_1000' }]
+      ]
+    }
+  });
+}
+
+// Отправить инвойс на оплату Stars
+function sendStarsInvoice(chatId, packageId) {
+  const pkg = STAR_PACKAGES[packageId];
+  if (!pkg) return;
+
+  bot.sendInvoice(chatId,
+    `${pkg.label}`,                          // title
+    `Black Key Casino — ${pkg.label}`,       // description
+    packageId,                                // payload (наш ID для проверки)
+    '',                                       // provider_token (ПУСТО для Stars!)
+    'XTR',                                    // currency = XTR (Stars)
+    [{ label: pkg.label, amount: pkg.stars }] // prices
+  ).catch(err => {
+    console.log('Ошибка инвойса:', err.message);
+    bot.sendMessage(chatId, '❌ Failed to create invoice. Try again later.');
+  });
+}
+
+// Pre-checkout: подтверждение перед оплатой
+bot.on('pre_checkout_query', (query) => {
+  bot.answerPreCheckoutQuery(query.id, true).catch(err => {
+    console.log('Pre-checkout error:', err.message);
+  });
+});
+
+// Successful payment: оплата прошла
+bot.on('successful_payment', (msg) => {
+  const userId = msg.from.id.toString();
+  const userName = msg.from.first_name || 'Player';
+  const payment = msg.successful_payment;
+  const packageId = payment.invoice_payload;
+  const pkg = STAR_PACKAGES[packageId];
+
+  if (!pkg) {
+    bot.sendMessage(msg.chat.id, '⚠ Package not found. Contact support.');
+    return;
+  }
+
+  // Начисляем фишки
+  const users = loadUsers();
+  if (!users[userId]) {
+    users[userId] = {
+      id: userId,
+      name: userName,
+      username: msg.from.username || '',
+      balance: 1000,
+      referrer: null,
+      referrals: [],
+      referralsLevel2: [],
+      referralEarnings: 0,
+      totalPurchased: 0,
+      totalStarsSpent: 0,
+      joinedAt: Date.now()
+    };
+  }
+
+  users[userId].balance += pkg.chips;
+  users[userId].totalPurchased = (users[userId].totalPurchased || 0) + pkg.chips;
+  users[userId].totalStarsSpent = (users[userId].totalStarsSpent || 0) + pkg.stars;
+
+  // Реферальный кэшбек 5% рефереру
+  if (users[userId].referrer && users[users[userId].referrer]) {
+    const c
 bot.on('polling_error', (error) => {
   console.log('Ошибка polling:', error.message);
 });
