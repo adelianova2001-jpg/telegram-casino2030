@@ -936,4 +936,357 @@ let minesField = [], minesOpened = 0, minesMultiplier = 1;
 function openMines() {
   document.getElementById('mainScreen').classList.add('hidden');
   document.getElementById('minesScreen').classList.remove('hidden');
-  document.getElementById('minesBalance').textContent = bal
+  document.getElementById('minesBalance').textContent = balance.toLocaleString();
+  document.getElementById('minesBetAmount').textContent = minesBet;
+  document.getElementById('minesNumDisplay').textContent = minesNum;
+  document.getElementById('minesCount').textContent = minesNum;
+  renderMinesGrid(true);
+  resetMinesUI();
+}
+
+function renderMinesGrid(disabled = false) {
+  const grid = document.getElementById('minesGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 25; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'mine-cell' + (disabled ? ' disabled' : '');
+    cell.dataset.index = i;
+    cell.onclick = () => openMineCell(i);
+    grid.appendChild(cell);
+  }
+}
+
+function resetMinesUI() {
+  document.getElementById('minesMulti').textContent = '1.00x';
+  document.getElementById('minesWin').textContent = '0';
+  document.getElementById('minesStartBtn').style.display = 'block';
+  document.getElementById('minesCashoutBtn').style.display = 'none';
+  document.getElementById('minesBetControl').style.display = 'block';
+  document.getElementById('minesResult').innerHTML = '';
+}
+
+function changeMinesBet(amount) {
+  if (minesActive) return;
+  const newBet = minesBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  minesBet = newBet;
+  document.getElementById('minesBetAmount').textContent = minesBet;
+}
+
+function changeMinesNum(amount) {
+  if (minesActive) return;
+  const newNum = minesNum + amount;
+  if (newNum < 1 || newNum > 15) return;
+  minesNum = newNum;
+  document.getElementById('minesNumDisplay').textContent = minesNum;
+  document.getElementById('minesCount').textContent = minesNum;
+}
+
+function startMines() {
+  if (balance < minesBet) { showToast('❌ Not enough chips'); return; }
+
+  balance -= minesBet;
+  updateBalance();
+  document.getElementById('minesBalance').textContent = balance.toLocaleString();
+
+  // генерация мин
+  minesField = Array(25).fill('gem');
+  let placed = 0;
+  while (placed < minesNum) {
+    const idx = Math.floor(Math.random() * 25);
+    if (minesField[idx] === 'gem') {
+      minesField[idx] = 'mine';
+      placed++;
+    }
+  }
+
+  minesOpened = 0;
+  minesMultiplier = 1;
+  minesActive = true;
+
+  renderMinesGrid(false);
+  document.getElementById('minesStartBtn').style.display = 'none';
+  document.getElementById('minesCashoutBtn').style.display = 'block';
+  document.getElementById('minesBetControl').style.display = 'none';
+  document.getElementById('minesResult').innerHTML = '';
+  haptic('spin');
+}
+
+function openMineCell(idx) {
+  if (!minesActive) return;
+  const cell = document.querySelector(`.mine-cell[data-index="${idx}"]`);
+  if (cell.classList.contains('opened-gem') || cell.classList.contains('opened-mine')) return;
+
+  if (minesField[idx] === 'mine') {
+    // проигрыш
+    cell.classList.add('opened-mine');
+    cell.textContent = '💣';
+    revealAllMines();
+    minesActive = false;
+    document.getElementById('minesCashoutBtn').style.display = 'none';
+    document.getElementById('minesResult').innerHTML = `<div class="result-lose">💥 BOOM! You lost ${minesBet} ◆</div>`;
+    haptic('lose');
+    setTimeout(() => {
+      resetMinesUI();
+      renderMinesGrid(true);
+      document.getElementById('minesBetControl').style.display = 'block';
+    }, 2500);
+    saveBalance();
+    return;
+  }
+
+  // нашёл алмаз
+  cell.classList.add('opened-gem');
+  cell.textContent = '💎';
+  minesOpened++;
+
+  // расчёт коэффициента
+  const gemsTotal = 25 - minesNum;
+  let multi = 1;
+  for (let i = 0; i < minesOpened; i++) {
+    multi *= (25 - i) / (gemsTotal - i);
+  }
+  multi *= 0.97; // комиссия казино
+  minesMultiplier = multi;
+
+  document.getElementById('minesMulti').textContent = multi.toFixed(2) + 'x';
+  document.getElementById('minesWin').textContent = Math.floor(minesBet * multi);
+  haptic('click');
+
+  // если открыл все алмазы - автовыплата
+  if (minesOpened === gemsTotal) cashoutMines();
+}
+
+function revealAllMines() {
+  minesField.forEach((v, i) => {
+    if (v === 'mine') {
+      const cell = document.querySelector(`.mine-cell[data-index="${i}"]`);
+      if (!cell.classList.contains('opened-mine')) {
+        cell.classList.add('opened-mine');
+        cell.textContent = '💣';
+      }
+    }
+    document.querySelector(`.mine-cell[data-index="${i}"]`).classList.add('disabled');
+  });
+}
+
+function cashoutMines() {
+  if (!minesActive || minesOpened === 0) return;
+
+  const win = Math.floor(minesBet * minesMultiplier);
+  balance += win;
+  updateBalance();
+  document.getElementById('minesBalance').textContent = balance.toLocaleString();
+
+  minesActive = false;
+  revealAllMines();
+  document.getElementById('minesCashoutBtn').style.display = 'none';
+  document.getElementById('minesResult').innerHTML = `<div class="result-win"><div>💰 CASHOUT ${minesMultiplier.toFixed(2)}x</div><div class="amount">+${win} ◆</div></div>`;
+  haptic('win');
+
+  setTimeout(() => {
+    resetMinesUI();
+    renderMinesGrid(true);
+    document.getElementById('minesBetControl').style.display = 'block';
+  }, 2500);
+  saveBalance();
+}
+
+// ============ CRASH ============
+let crashBet = 50, crashRunning = false, crashMulti = 1, crashTarget = 0, crashInterval;
+
+function openCrash() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('crashScreen').classList.remove('hidden');
+  document.getElementById('crashBalance').textContent = balance.toLocaleString();
+  document.getElementById('crashBetAmount').textContent = crashBet;
+  resetCrashUI();
+}
+
+function resetCrashUI() {
+  document.getElementById('crashMulti').textContent = '1.00x';
+  document.getElementById('crashMulti').classList.remove('crashed');
+  const rocket = document.getElementById('crashRocket');
+  rocket.classList.remove('flying', 'crashed');
+  rocket.style.cssText = '';
+  document.getElementById('crashStartBtn').style.display = 'block';
+  document.getElementById('crashCashoutBtn').style.display = 'none';
+  document.getElementById('crashResult').innerHTML = '';
+}
+
+function changeCrashBet(amount) {
+  if (crashRunning) return;
+  const newBet = crashBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  crashBet = newBet;
+  document.getElementById('crashBetAmount').textContent = crashBet;
+}
+
+function generateCrashPoint() {
+  // честный crash: ~97% RTP
+  const r = Math.random();
+  if (r < 0.03) return 1.00; // мгновенный краш 3%
+  const e = Math.random();
+  return Math.max(1.01, (0.97 / (1 - e)));
+}
+
+function startCrash() {
+  if (balance < crashBet) { showToast('❌ Not enough chips'); return; }
+
+  balance -= crashBet;
+  updateBalance();
+  document.getElementById('crashBalance').textContent = balance.toLocaleString();
+
+  crashRunning = true;
+  crashMulti = 1;
+  crashTarget = generateCrashPoint();
+
+  document.getElementById('crashStartBtn').style.display = 'none';
+  document.getElementById('crashCashoutBtn').style.display = 'block';
+  document.getElementById('crashResult').innerHTML = '';
+  document.getElementById('crashMulti').classList.remove('crashed');
+
+  const rocket = document.getElementById('crashRocket');
+  rocket.classList.add('flying');
+
+  haptic('spin');
+
+  const startTime = Date.now();
+  crashInterval = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    crashMulti = Math.pow(1.06, elapsed * 2);
+    document.getElementById('crashMulti').textContent = crashMulti.toFixed(2) + 'x';
+
+    if (crashMulti >= crashTarget) {
+      crashExplode();
+    }
+  }, 50);
+}
+
+function crashExplode() {
+  clearInterval(crashInterval);
+  crashRunning = false;
+
+  document.getElementById('crashMulti').textContent = crashTarget.toFixed(2) + 'x 💥';
+  document.getElementById('crashMulti').classList.add('crashed');
+
+  const rocket = document.getElementById('crashRocket');
+  rocket.classList.remove('flying');
+  rocket.classList.add('crashed');
+
+  document.getElementById('crashCashoutBtn').style.display = 'none';
+  document.getElementById('crashResult').innerHTML = `<div class="result-lose">💥 CRASHED at ${crashTarget.toFixed(2)}x</div>`;
+  haptic('lose');
+
+  setTimeout(resetCrashUI, 2500);
+  saveBalance();
+}
+
+function cashoutCrash() {
+  if (!crashRunning) return;
+  clearInterval(crashInterval);
+  crashRunning = false;
+
+  const win = Math.floor(crashBet * crashMulti);
+  balance += win;
+  updateBalance();
+  document.getElementById('crashBalance').textContent = balance.toLocaleString();
+
+  const rocket = document.getElementById('crashRocket');
+  rocket.classList.remove('flying');
+
+  document.getElementById('crashCashoutBtn').style.display = 'none';
+  document.getElementById('crashResult').innerHTML = `<div class="result-win"><div>💰 CASHOUT ${crashMulti.toFixed(2)}x</div><div class="amount">+${win} ◆</div></div>`;
+  haptic('win');
+
+  setTimeout(resetCrashUI, 2500);
+  saveBalance();
+}
+
+// ============ WHEEL OF FORTUNE ============
+let wheelBet = 50, wheelSpinning = false;
+
+const wheelSegments = [
+  { label: 'x1.5', multi: 1.5, color: '#c0392b', weight: 30 },
+  { label: 'x2',   multi: 2,   color: '#2980b9', weight: 25 },
+  { label: 'x3',   multi: 3,   color: '#27ae60', weight: 20 },
+  { label: 'x5',   multi: 5,   color: '#c0392b', weight: 15 },
+  { label: 'x10',  multi: 10,  color: '#f39c12', weight: 8 },
+  { label: 'x50',  multi: 50,  color: '#8e44ad', weight: 2 }
+];
+
+function openWheel() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('wheelScreen').classList.remove('hidden');
+  document.getElementById('wheelBalance').textContent = balance.toLocaleString();
+  document.getElementById('wheelBetAmount').textContent = wheelBet;
+}
+
+function changeWheelBet(amount) {
+  if (wheelSpinning) return;
+  const newBet = wheelBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  wheelBet = newBet;
+  document.getElementById('wheelBetAmount').textContent = wheelBet;
+}
+
+function pickWheelSegment() {
+  const totalWeight = wheelSegments.reduce((s, x) => s + x.weight, 0);
+  let r = Math.random() * totalWeight;
+  for (let i = 0; i < wheelSegments.length; i++) {
+    r -= wheelSegments[i].weight;
+    if (r <= 0) return i;
+  }
+  return 0;
+}
+
+async function spinWheel() {
+  if (wheelSpinning) return;
+  if (balance < wheelBet) { showToast('❌ Not enough chips'); return; }
+
+  wheelSpinning = true;
+  balance -= wheelBet;
+  updateBalance();
+  document.getElementById('wheelBalance').textContent = balance.toLocaleString();
+
+  const btn = document.getElementById('wheelSpinBtn');
+  btn.disabled = true;
+  document.getElementById('wheelResult').innerHTML = '';
+
+  const segIndex = pickWheelSegment();
+  const segAngle = 60; // 360/6
+  const targetAngle = 360 * 6 + (360 - (segIndex * segAngle + segAngle / 2));
+
+  const wheel = document.getElementById('fortuneWheel');
+  wheel.style.transform = `rotate(${targetAngle}deg)`;
+  document.getElementById('fortuneWheel').querySelector('.fortune-center').textContent = '...';
+
+  haptic('spin');
+
+  await new Promise(r => setTimeout(r, 4200));
+
+  const seg = wheelSegments[segIndex];
+  document.getElementById('fortuneWheel').querySelector('.fortune-center').textContent = seg.label;
+
+  const win = Math.floor(wheelBet * seg.multi);
+  balance += win;
+  updateBalance();
+  document.getElementById('wheelBalance').textContent = balance.toLocaleString();
+
+  document.getElementById('wheelResult').innerHTML = `<div class="result-win"><div>🎯 ${seg.label}</div><div class="amount">+${win} ◆</div></div>`;
+  haptic('win');
+
+  btn.disabled = false;
+  wheelSpinning = false;
+
+  // сброс поворота колеса для следующего спина
+  setTimeout(() => {
+    wheel.style.transition = 'none';
+    wheel.style.transform = `rotate(${targetAngle % 360}deg)`;
+    setTimeout(() => {
+      wheel.style.transition = 'transform 4s cubic-bezier(0.15, 0.45, 0.25, 1)';
+    }, 50);
+  }, 500);
+
+  saveBalance();
+}
