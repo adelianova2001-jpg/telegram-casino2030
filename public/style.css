@@ -803,3 +803,254 @@ body {
   text-align: center;
   padding: 15px;
 }
+/* ============ COMMON ============ */
+.game-container {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ============ COIN FLIP ============ */
+.coin {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 1s;
+}
+
+.coin.flipping {
+  animation: coinFlip 1.5s ease-in-out;
+}
+
+@keyframes coinFlip {
+  0% { transform: rotateY(0); }
+  100% { transform: rotateY(1800deg); }
+}
+
+.coin-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  font-family: 'Cinzel', serif;
+  font-weight: bold;
+  backface-visibility: hidden;
+  border: 4px solid #d4af37;
+}
+
+.coin-face.heads {
+  background: linear-gradient(135deg, #d4af37, #a8841f);
+  color: #0a0a0a;
+}
+
+.coin-face.tails {
+  background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+  color: #d4af37;
+  transform: rotateY(180deg);
+}
+
+/* ============ HI-LO ============ */
+.hilo-card {
+  width: 150px;
+  height: 220px;
+  background: linear-gradient(135deg, #fff, #eee);
+  color: #c0392b;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  font-family: 'Cinzel', serif;
+  font-weight: bold;
+  border: 4px solid #d4af37;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
+.hilo-card.flip {
+  animation: cardFlip 0.6s;
+}
+
+@keyframes cardFlip {
+  0% { transform: rotateY(0); }
+  50% { transform: rotateY(90deg); }
+  100% { transform: rotateY(0); }
+}
+
+/* ============ MINES ============ */
+.mines-info {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  color: #d4af37;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 10px;
+  background: rgba(212,175,55,0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(212,175,55,0.2);
+}
+
+.mines-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 350px;
+}
+
+.mine-cell {
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+  border: 2px solid rgba(212,175,55,0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mine-cell:hover {
+  border-color: #d4af37;
+  transform: scale(1.05);
+}
+
+.mine-cell.opened-gem {
+  background: linear-gradient(135deg, #27ae60, #229954);
+  border-color: #2ecc71;
+  animation: gemPop 0.4s;
+}
+
+.mine-cell.opened-mine {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  border-color: #e74c3c;
+  animation: mineExplode 0.4s;
+}
+
+.mine-cell.disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+@keyframes gemPop {
+  0% { transform: scale(0.5); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes mineExplode {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.3) rotate(-10deg); }
+  75% { transform: scale(1.3) rotate(10deg); }
+}
+
+/* ============ CRASH ============ */
+.crash-display {
+  width: 100%;
+  height: 280px;
+  background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+  border: 2px solid rgba(212,175,55,0.3);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.crash-multi {
+  font-family: 'Cinzel', serif;
+  font-size: 72px;
+  font-weight: bold;
+  color: #d4af37;
+  letter-spacing: 4px;
+  z-index: 2;
+}
+
+.crash-multi.crashed {
+  color: #e74c3c;
+}
+
+.crash-rocket {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  font-size: 40px;
+  transition: all 0.1s linear;
+}
+
+.crash-rocket.flying {
+  animation: rocketFly 5s linear forwards;
+}
+
+@keyframes rocketFly {
+  0% { bottom: 20px; left: 20px; transform: rotate(-45deg); }
+  100% { bottom: 80%; left: 80%; transform: rotate(-45deg) scale(1.5); }
+}
+
+.crash-rocket.crashed {
+  animation: rocketCrash 0.5s forwards;
+}
+
+@keyframes rocketCrash {
+  0% { transform: rotate(-45deg) scale(1.5); }
+  100% { transform: rotate(180deg) scale(0); opacity: 0; }
+}
+
+/* ============ WHEEL OF FORTUNE ============ */
+.wheel-pointer {
+  font-size: 36px;
+  color: #d4af37;
+  z-index: 3;
+  margin-bottom: -10px;
+}
+
+.fortune-wheel {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #c0392b 0deg 60deg,
+    #2980b9 60deg 120deg,
+    #27ae60 120deg 180deg,
+    #c0392b 180deg 240deg,
+    #f39c12 240deg 300deg,
+    #8e44ad 300deg 360deg
+  );
+  border: 5px solid #d4af37;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 0 40px rgba(212,175,55,0.4);
+  transition: transform 4s cubic-bezier(0.15, 0.45, 0.25, 1);
+}
+
+.fortune-center {
+  width: 100px;
+  height: 100px;
+  background: #0a0a0a;
+  border: 3px solid #d4af37;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 24px;
+  color: #d4af37;
+  font-weight: bold;
+}
