@@ -660,9 +660,24 @@ body {
 
 .dice-choice, .roulette-choices {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
   margin-bottom: 10px;
+  padding: 0 15px;
+  flex-wrap: wrap;
+}
+
+.roulette-choices .roulette-btn {
+  min-width: 0;
+  flex: 1;
+  font-size: 11px;
+  padding: 10px 5px;
+  letter-spacing: 1px;
+}
+
+.roulette-choices .roulette-btn small {
+  font-size: 9px;
+  opacity: 0.7;
 }
 
 .dice-btn, .roulette-btn {
