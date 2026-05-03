@@ -785,6 +785,8 @@ async function spinRoulette() {
 
 // ============ НОВЫЙ backToMenu (обновлённый) ============
 function backToMenu() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById('mainScreen').classList.remove('hidden');
   document.getElementById('slotsScreen')?.classList.add('hidden');
   document.getElementById('diceScreen')?.classList.add('hidden');
   document.getElementById('rouletteScreen')?.classList.add('hidden');
@@ -797,3 +799,141 @@ checkAdStatus();
 setInterval(() => {
   checkDailyStatus();
 }, 60000);
+// ============ COIN FLIP ============
+let coinBet = 50, coinSide = 'heads', coinFlipping = false;
+
+function openCoinflip() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('coinflipScreen').classList.remove('hidden');
+  document.getElementById('coinflipBalance').textContent = balance.toLocaleString();
+  document.getElementById('coinBetAmount').textContent = coinBet;
+}
+
+function selectCoinSide(side) {
+  coinSide = side;
+  document.getElementById('coinHeads').classList.toggle('active', side === 'heads');
+  document.getElementById('coinTails').classList.toggle('active', side === 'tails');
+}
+
+function changeCoinBet(amount) {
+  const newBet = coinBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  coinBet = newBet;
+  document.getElementById('coinBetAmount').textContent = coinBet;
+}
+
+async function flipCoin() {
+  if (coinFlipping) return;
+  if (balance < coinBet) { showToast('❌ Not enough chips'); return; }
+
+  coinFlipping = true;
+  balance -= coinBet;
+  updateBalance();
+  document.getElementById('coinflipBalance').textContent = balance.toLocaleString();
+
+  const btn = document.getElementById('flipBtn');
+  btn.disabled = true;
+  const coin = document.getElementById('coin');
+  coin.classList.add('flipping');
+  haptic('spin');
+
+  await new Promise(r => setTimeout(r, 1500));
+  coin.classList.remove('flipping');
+
+  const result = Math.random() < 0.5 ? 'heads' : 'tails';
+  const resultEl = document.getElementById('coinResult');
+
+  if (result === coinSide) {
+    const win = coinBet * 2;
+    balance += win;
+    updateBalance();
+    document.getElementById('coinflipBalance').textContent = balance.toLocaleString();
+    resultEl.innerHTML = `<div class="result-win"><div>${result.toUpperCase()}</div><div class="amount">+${win} ◆</div></div>`;
+    haptic('win');
+  } else {
+    resultEl.innerHTML = `<div class="result-lose">${result.toUpperCase()} — You lost</div>`;
+    haptic('lose');
+  }
+
+  btn.disabled = false;
+  coinFlipping = false;
+  saveBalance();
+}
+
+// ============ HI-LO ============
+let hiloBet = 50, hiloCurrent = 7, hiloPlaying = false;
+
+function openHilo() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('hiloScreen').classList.remove('hidden');
+  document.getElementById('hiloBalance').textContent = balance.toLocaleString();
+  document.getElementById('hiloBetAmount').textContent = hiloBet;
+  hiloCurrent = Math.floor(Math.random() * 13) + 1;
+  document.getElementById('hiloCard').textContent = hiloCardLabel(hiloCurrent);
+}
+
+function hiloCardLabel(n) {
+  if (n === 1) return 'A';
+  if (n === 11) return 'J';
+  if (n === 12) return 'Q';
+  if (n === 13) return 'K';
+  return n;
+}
+
+function changeHiloBet(amount) {
+  const newBet = hiloBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  hiloBet = newBet;
+  document.getElementById('hiloBetAmount').textContent = hiloBet;
+}
+
+async function hiloGuess(guess) {
+  if (hiloPlaying) return;
+  if (balance < hiloBet) { showToast('❌ Not enough chips'); return; }
+
+  hiloPlaying = true;
+  balance -= hiloBet;
+  updateBalance();
+  document.getElementById('hiloBalance').textContent = balance.toLocaleString();
+
+  const card = document.getElementById('hiloCard');
+  card.classList.add('flip');
+  haptic('spin');
+
+  await new Promise(r => setTimeout(r, 600));
+
+  let next;
+  do { next = Math.floor(Math.random() * 13) + 1; } while (next === hiloCurrent);
+
+  card.textContent = hiloCardLabel(next);
+  card.classList.remove('flip');
+
+  const isHigher = next > hiloCurrent;
+  const win = (guess === 'higher' && isHigher) || (guess === 'lower' && !isHigher);
+
+  const resultEl = document.getElementById('hiloResult');
+  if (win) {
+    const winAmount = Math.floor(hiloBet * 1.9);
+    balance += winAmount;
+    updateBalance();
+    document.getElementById('hiloBalance').textContent = balance.toLocaleString();
+    resultEl.innerHTML = `<div class="result-win"><div class="amount">+${winAmount} ◆</div></div>`;
+    haptic('win');
+  } else {
+    resultEl.innerHTML = `<div class="result-lose">You lost</div>`;
+    haptic('lose');
+  }
+
+  hiloCurrent = next;
+  hiloPlaying = false;
+  saveBalance();
+}
+
+// ============ MINES ============
+let minesBet = 50, minesNum = 3, minesActive = false;
+let minesField = [], minesOpened = 0, minesMultiplier = 1;
+
+function openMines() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('minesScreen').classList.remove('hidden');
+  document.getElementById('minesBalance').textContent = bal
