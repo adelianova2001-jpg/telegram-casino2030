@@ -600,6 +600,196 @@ async function buyPackage(packageId) {
 }
 
 // ============ INIT ============
+// ============ DICE GAME ============
+let diceBet = 50;
+let diceMode = 'under';
+let diceRolling = false;
+
+function openDice() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('diceScreen').classList.remove('hidden');
+  document.getElementById('diceBalance').textContent = balance.toLocaleString();
+  document.getElementById('diceBetAmount').textContent = diceBet;
+}
+
+function selectDiceMode(mode) {
+  diceMode = mode;
+  document.getElementById('diceUnder').classList.toggle('active', mode === 'under');
+  document.getElementById('diceOver').classList.toggle('active', mode === 'over');
+}
+
+function changeDiceBet(amount) {
+  const newBet = diceBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  diceBet = newBet;
+  document.getElementById('diceBetAmount').textContent = diceBet;
+}
+
+async function rollDice() {
+  if (diceRolling) return;
+  if (balance < diceBet) {
+    showToast('❌ Not enough chips');
+    return;
+  }
+
+  diceRolling = true;
+  balance -= diceBet;
+  updateBalance();
+  document.getElementById('diceBalance').textContent = balance.toLocaleString();
+
+  const btn = document.getElementById('rollDiceBtn');
+  btn.disabled = true;
+  btn.textContent = 'Rolling...';
+
+  const display = document.getElementById('diceDisplay');
+  display.classList.add('rolling');
+  haptic('spin');
+
+  // Анимация
+  const animInterval = setInterval(() => {
+    display.textContent = Math.floor(Math.random() * 100) + 1;
+  }, 80);
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  clearInterval(animInterval);
+  display.classList.remove('rolling');
+
+  // Результат
+  const roll = Math.floor(Math.random() * 100) + 1;
+  display.textContent = roll;
+
+  let win = false;
+  if (diceMode === 'under' && roll < 50) win = true;
+  if (diceMode === 'over' && roll > 50) win = true;
+
+  const resultEl = document.getElementById('diceResult');
+  if (win) {
+    const winAmount = diceBet * 2;
+    balance += winAmount;
+    updateBalance();
+    document.getElementById('diceBalance').textContent = balance.toLocaleString();
+    resultEl.innerHTML = `<div class="result-win"><div class="amount">+${winAmount} ◆</div></div>`;
+    haptic('win');
+  } else {
+    resultEl.innerHTML = `<div class="result-lose">You lost</div>`;
+    haptic('lose');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🎲 Roll';
+  diceRolling = false;
+  saveBalance();
+}
+
+// ============ ROULETTE ============
+let rouletteBet = 50;
+let rouletteChoice = null;
+let rouletteSpinning = false;
+
+function openRoulette() {
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('rouletteScreen').classList.remove('hidden');
+  document.getElementById('rouletteBalance').textContent = balance.toLocaleString();
+  document.getElementById('rouletteBetAmount').textContent = rouletteBet;
+}
+
+function selectRouletteBet(choice) {
+  rouletteChoice = choice;
+  document.querySelectorAll('.roulette-btn').forEach(b => b.classList.remove('active'));
+  const btnMap = {
+    red: 'betRed', black: 'betBlack', green: 'betGreen',
+    even: 'betEven', odd: 'betOdd'
+  };
+  document.getElementById(btnMap[choice]).classList.add('active');
+}
+
+function changeRouletteBet(amount) {
+  const newBet = rouletteBet + amount;
+  if (newBet < 10 || newBet > balance || newBet > 1000) return;
+  rouletteBet = newBet;
+  document.getElementById('rouletteBetAmount').textContent = rouletteBet;
+}
+
+async function spinRoulette() {
+  if (rouletteSpinning) return;
+  if (!rouletteChoice) {
+    showToast('❌ Select your bet');
+    return;
+  }
+  if (balance < rouletteBet) {
+    showToast('❌ Not enough chips');
+    return;
+  }
+
+  rouletteSpinning = true;
+  balance -= rouletteBet;
+  updateBalance();
+  document.getElementById('rouletteBalance').textContent = balance.toLocaleString();
+
+  const btn = document.getElementById('spinRouletteBtn');
+  btn.disabled = true;
+  btn.textContent = 'Spinning...';
+
+  const wheel = document.getElementById('rouletteWheel');
+  const numEl = document.getElementById('rouletteNumber');
+  wheel.classList.add('spinning');
+  numEl.textContent = '?';
+  haptic('spin');
+
+  await new Promise(r => setTimeout(r, 3000));
+
+  wheel.classList.remove('spinning');
+
+  // 0-36 (0 = зелёный, чёт = чёрный, нечёт = красный для упрощения)
+  const number = Math.floor(Math.random() * 37);
+  numEl.textContent = number;
+
+  let color;
+  if (number === 0) color = 'green';
+  else if (number % 2 === 0) color = 'black';
+  else color = 'red';
+
+  numEl.style.color = color === 'red' ? '#e74c3c' : color === 'green' ? '#2ecc71' : '#fff';
+
+  let win = false;
+  let multiplier = 2;
+
+  if (rouletteChoice === color) {
+    win = true;
+    if (color === 'green') multiplier = 14;
+  } else if (rouletteChoice === 'even' && number !== 0 && number % 2 === 0) {
+    win = true;
+  } else if (rouletteChoice === 'odd' && number % 2 !== 0) {
+    win = true;
+  }
+
+  const resultEl = document.getElementById('rouletteResult');
+  if (win) {
+    const winAmount = rouletteBet * multiplier;
+    balance += winAmount;
+    updateBalance();
+    document.getElementById('rouletteBalance').textContent = balance.toLocaleString();
+    resultEl.innerHTML = `<div class="result-win"><div style="font-size:11px; letter-spacing:3px;">${number} ${color.toUpperCase()} — x${multiplier}</div><div class="amount">+${winAmount} ◆</div></div>`;
+    haptic('win');
+  } else {
+    resultEl.innerHTML = `<div class="result-lose">${number} ${color.toUpperCase()} — You lost</div>`;
+    haptic('lose');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🎡 Spin';
+  rouletteSpinning = false;
+  saveBalance();
+}
+
+// ============ НОВЫЙ backToMenu (обновлённый) ============
+function backToMenu() {
+  document.getElementById('slotsScreen')?.classList.add('hidden');
+  document.getElementById('diceScreen')?.classList.add('hidden');
+  document.getElementById('rouletteScreen')?.classList.add('hidden');
+  document.getElementById('mainScreen').classList.remove('hidden');
+}
 initBalance();
 checkDailyStatus();
 checkAdStatus();
