@@ -501,5 +501,166 @@
     <div id="rouletteResult" class="result-area"></div>
   </div>
 </div>
+  <!-- ============ COIN FLIP ============ -->
+<div id="coinflipScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+  <div class="game-header">
+    <div class="game-title">🪙 COIN FLIP</div>
+    <div class="balance-display">💰 <span id="coinflipBalance">0</span></div>
+  </div>
+
+  <div class="game-container">
+    <div class="coin" id="coin">
+      <div class="coin-face heads">H</div>
+      <div class="coin-face tails">T</div>
+    </div>
+
+    <div class="dice-label">Choose side:</div>
+    <div class="dice-choice">
+      <button class="dice-btn active" id="coinHeads" onclick="selectCoinSide('heads')">⚪ HEADS</button>
+      <button class="dice-btn" id="coinTails" onclick="selectCoinSide('tails')">⚫ TAILS</button>
+    </div>
+    <div class="dice-hint">Win x2 if you guess right!</div>
+
+    <div class="bet-control">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeCoinBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="coinBetAmount">50</span></div>
+        <button onclick="changeCoinBet(10)">+10</button>
+      </div>
+    </div>
+
+    <button class="spin-btn" id="flipBtn" onclick="flipCoin()">🪙 Flip</button>
+    <div id="coinResult" class="result-area"></div>
+  </div>
+</div>
+
+<!-- ============ HI-LO ============ -->
+<div id="hiloScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+  <div class="game-header">
+    <div class="game-title">🃏 HI-LO</div>
+    <div class="balance-display">💰 <span id="hiloBalance">0</span></div>
+  </div>
+
+  <div class="game-container">
+    <div class="hilo-card" id="hiloCard">?</div>
+    <div class="dice-hint" id="hiloHint">Will next card be higher or lower?</div>
+
+    <div class="dice-choice">
+      <button class="dice-btn" onclick="hiloGuess('higher')">⬆ HIGHER</button>
+      <button class="dice-btn" onclick="hiloGuess('lower')">⬇ LOWER</button>
+    </div>
+
+    <div class="bet-control">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeHiloBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="hiloBetAmount">50</span></div>
+        <button onclick="changeHiloBet(10)">+10</button>
+      </div>
+    </div>
+
+    <div id="hiloResult" class="result-area"></div>
+  </div>
+</div>
+
+<!-- ============ MINES ============ -->
+<div id="minesScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+  <div class="game-header">
+    <div class="game-title">💣 MINES</div>
+    <div class="balance-display">💰 <span id="minesBalance">0</span></div>
+  </div>
+
+  <div class="game-container">
+    <div class="mines-info">
+      <div>Mines: <span id="minesCount">3</span></div>
+      <div>Multiplier: <span id="minesMulti">1.00x</span></div>
+      <div>Win: ◆<span id="minesWin">0</span></div>
+    </div>
+
+    <div class="mines-grid" id="minesGrid"></div>
+
+    <div class="bet-control" id="minesBetControl">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeMinesBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="minesBetAmount">50</span></div>
+        <button onclick="changeMinesBet(10)">+10</button>
+      </div>
+      <div class="bet-label" style="margin-top:10px;">Mines:</div>
+      <div class="bet-buttons">
+        <button onclick="changeMinesNum(-1)">-1</button>
+        <div class="bet-value"><span id="minesNumDisplay">3</span></div>
+        <button onclick="changeMinesNum(1)">+1</button>
+      </div>
+    </div>
+
+    <button class="spin-btn" id="minesStartBtn" onclick="startMines()">💣 Start</button>
+    <button class="spin-btn" id="minesCashoutBtn" onclick="cashoutMines()" style="display:none; background:linear-gradient(135deg,#27ae60,#229954);">💰 Cashout</button>
+    <div id="minesResult" class="result-area"></div>
+  </div>
+</div>
+
+<!-- ============ CRASH ============ -->
+<div id="crashScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+  <div class="game-header">
+    <div class="game-title">🚀 CRASH</div>
+    <div class="balance-display">💰 <span id="crashBalance">0</span></div>
+  </div>
+
+  <div class="game-container">
+    <div class="crash-display" id="crashDisplay">
+      <div class="crash-multi" id="crashMulti">1.00x</div>
+      <div class="crash-rocket" id="crashRocket">🚀</div>
+    </div>
+
+    <div class="bet-control">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeCrashBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="crashBetAmount">50</span></div>
+        <button onclick="changeCrashBet(10)">+10</button>
+      </div>
+    </div>
+
+    <button class="spin-btn" id="crashStartBtn" onclick="startCrash()">🚀 Launch</button>
+    <button class="spin-btn" id="crashCashoutBtn" onclick="cashoutCrash()" style="display:none; background:linear-gradient(135deg,#27ae60,#229954);">💰 Cashout</button>
+    <div id="crashResult" class="result-area"></div>
+  </div>
+</div>
+
+<!-- ============ WHEEL OF FORTUNE ============ -->
+<div id="wheelScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+  <div class="game-header">
+    <div class="game-title">🎯 WHEEL</div>
+    <div class="balance-display">💰 <span id="wheelBalance">0</span></div>
+  </div>
+
+  <div class="game-container">
+    <div class="wheel-pointer">▼</div>
+    <div class="fortune-wheel" id="fortuneWheel">
+      <div class="fortune-center">?</div>
+    </div>
+
+    <div class="dice-hint">x1.5 x2 x3 x5 x10 x50 (rare!)</div>
+
+    <div class="bet-control">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeWheelBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="wheelBetAmount">50</span></div>
+        <button onclick="changeWheelBet(10)">+10</button>
+      </div>
+    </div>
+
+    <button class="spin-btn" id="wheelSpinBtn" onclick="spinWheel()">🎯 Spin</button>
+    <div id="wheelResult" class="result-area"></div>
+  </div>
+</div>
 </body>
 </html>
