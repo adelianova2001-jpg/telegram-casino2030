@@ -1,6 +1,5 @@
 // ============ BLACK KEY CASINO ============
 
-// Инициализация Telegram Web App
 const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
@@ -11,20 +10,16 @@ if (tg) {
   } catch(e) {}
 }
 
-// Состояние
 let balance = 0;
 let currentBet = 50;
 let isSpinning = false;
 
-// Символы слотов и их веса
 const symbols = ['🍒', '🍋', '🔔', '7️⃣', '👑', '💎', '🗝️'];
 const symbolWeights = [30, 25, 20, 12, 7, 4, 2];
-
 const multipliers = {
   '🗝️': 50, '💎': 20, '👑': 15, '7️⃣': 10, '🔔': 7, '🍋': 6, '🍒': 5
 };
 
-// ============ USER ID ============
 function getUserId() {
   try {
     if (tg && tg.initDataUnsafe?.user?.id) {
@@ -74,31 +69,11 @@ function backToMenu() {
 }
 
 function openRoulette() {
-  showResultMessage('🎡 Roulette coming soon...');
+  showToast('🎡 Roulette coming soon...');
 }
 
 function openDice() {
-  showResultMessage('🎲 Dice coming soon...');
-}
-
-function showResultMessage(text) {
-  const toast = document.createElement('div');
-  toast.textContent = text;
-  toast.style.cssText = `
-    position:fixed; top:50%; left:50%;
-    transform:translate(-50%,-50%);
-    background:linear-gradient(135deg, #1a1a1a, #0a0a0a);
-    color:#d4af37;
-    padding:20px 30px;
-    border-radius:12px;
-    font-family:'Cinzel',serif;
-    letter-spacing:2px;
-    border:1px solid rgba(212,175,55,0.4);
-    box-shadow:0 10px 40px rgba(0,0,0,0.8);
-    z-index:10000;
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2000);
+  showToast('🎲 Dice coming soon...');
 }
 
 function animateReel(reelIndex, finalSymbol, duration) {
@@ -107,11 +82,9 @@ function animateReel(reelIndex, finalSymbol, duration) {
     const inner = reel.querySelector('.reel-inner');
     reel.classList.add('spinning');
     reel.classList.remove('winner');
-
     const interval = setInterval(() => {
       inner.textContent = symbols[Math.floor(Math.random() * symbols.length)];
     }, 80);
-
     setTimeout(() => {
       clearInterval(interval);
       reel.classList.remove('spinning');
@@ -131,37 +104,22 @@ function haptic(type) {
   } catch(e) {}
 }
 
-// ============ SPIN ============
 async function spin() {
   if (isSpinning) return;
   if (balance < currentBet) {
     showResult(false, 0, 'Not enough chips');
-    // Показываем как добрать монеты
-    setTimeout(() => {
-      if (confirm('Not enough chips! Get more?\n\n📺 Watch ad (+100)\n⭐ Buy with Stars\n🎁 Daily bonus')) {
-        // Просто закроем — юзер увидит кнопки сверху
-      }
-    }, 500);
     return;
   }
-
   isSpinning = true;
   balance -= currentBet;
   updateBalance();
-
   const spinBtn = document.getElementById('spinBtn');
   spinBtn.disabled = true;
   spinBtn.textContent = 'Spinning...';
-
   document.getElementById('result').innerHTML = '<div class="result-placeholder">Spinning...</div>';
-
   haptic('spin');
 
-  const result = [
-    getWeightedSymbol(),
-    getWeightedSymbol(),
-    getWeightedSymbol()
-  ];
+  const result = [getWeightedSymbol(), getWeightedSymbol(), getWeightedSymbol()];
 
   await Promise.all([
     animateReel(0, result[0], 1000),
@@ -180,7 +138,6 @@ async function spin() {
   } else if (result[0] === result[1] || result[1] === result[2] || result[0] === result[2]) {
     winAmount = currentBet * 2;
     winType = 'Pair — x2';
-
     if (result[0] === result[1]) {
       document.getElementById('reel0').classList.add('winner');
       document.getElementById('reel1').classList.add('winner');
@@ -198,7 +155,6 @@ async function spin() {
     updateBalance();
     showResult(true, winAmount, winType);
     haptic('win');
-
     setTimeout(() => {
       [0,1,2].forEach(i => document.getElementById('reel'+i).classList.remove('winner'));
     }, 3000);
@@ -210,27 +166,18 @@ async function spin() {
   spinBtn.disabled = false;
   spinBtn.textContent = 'Spin';
   isSpinning = false;
-
   saveBalance();
 }
 
 function showResult(isWin, amount, message) {
   const result = document.getElementById('result');
   if (isWin) {
-    result.innerHTML = `
-      <div class="result-win">
-        <div style="font-size:11px; letter-spacing:3px; text-transform:uppercase; opacity:0.8;">${message}</div>
-        <div class="amount">+${amount.toLocaleString()} ◆</div>
-      </div>
-    `;
-  } else if (amount === 0 && message === 'Not enough chips') {
-    result.innerHTML = `<div class="result-lose" style="letter-spacing:2px; text-transform:uppercase;">⚠ ${message}</div>`;
+    result.innerHTML = `<div class="result-win"><div style="font-size:11px; letter-spacing:3px; text-transform:uppercase; opacity:0.8;">${message}</div><div class="amount">+${amount.toLocaleString()} ◆</div></div>`;
   } else {
     result.innerHTML = `<div class="result-lose" style="letter-spacing:3px; text-transform:uppercase; font-size:13px;">${message}</div>`;
   }
 }
 
-// ============ СИНХРОНИЗАЦИЯ БАЛАНСА ============
 async function initBalance() {
   try {
     const userId = getUserId();
@@ -280,10 +227,8 @@ async function checkDailyStatus() {
     const userId = getUserId();
     const res = await fetch('/api/daily/' + userId);
     dailyData = await res.json();
-
     const badge = document.getElementById('dailyBadge');
     const btn = document.getElementById('dailyBtn');
-
     if (dailyData.canClaim) {
       if (badge) badge.style.display = 'block';
       if (btn) btn.classList.add('daily-ready');
@@ -308,11 +253,9 @@ function closeDailyBonus() {
 
 function renderDailyCalendar() {
   if (!dailyData) return;
-
   const grid = document.getElementById('dailyGrid');
   const claimBtn = document.getElementById('dailyClaimBtn');
   const claimedMsg = document.getElementById('dailyClaimedMsg');
-
   const bonuses = dailyData.bonuses;
   const streak = dailyData.streak;
   const canClaim = dailyData.canClaim;
@@ -324,7 +267,6 @@ function renderDailyCalendar() {
     const reward = bonuses[i];
     let cls = '';
     let check = '';
-
     if (day < currentDay) {
       cls = 'claimed';
       check = '<div class="check">✓</div>';
@@ -334,16 +276,8 @@ function renderDailyCalendar() {
       cls = 'claimed';
       check = '<div class="check">✓</div>';
     }
-
-    html += `
-      <div class="day-card ${cls} ${day === 7 ? 'day-7' : ''}">
-        ${check}
-        <div class="day-num">Day ${day}</div>
-        <div class="day-reward">+${reward} ◆</div>
-      </div>
-    `;
+    html += `<div class="day-card ${cls} ${day === 7 ? 'day-7' : ''}">${check}<div class="day-num">Day ${day}</div><div class="day-reward">+${reward} ◆</div></div>`;
   }
-
   grid.innerHTML = html;
 
   if (canClaim) {
@@ -362,20 +296,15 @@ async function claimDailyBonus() {
     const btn = document.getElementById('dailyClaimBtn');
     btn.disabled = true;
     btn.textContent = 'Claiming...';
-
     const res = await fetch('/api/daily/' + userId, { method: 'POST' });
     const data = await res.json();
-
     if (data.ok) {
       balance = data.balance;
       updateBalance();
       haptic('win');
       showToast(`🎁 +${data.reward} ◆ Day ${data.day}!`);
-
-      // Обновляем календарь
       await checkDailyStatus();
       renderDailyCalendar();
-
       setTimeout(() => closeDailyBonus(), 2000);
     } else {
       showToast('❌ ' + (data.error || 'Error'));
@@ -387,7 +316,7 @@ async function claimDailyBonus() {
   }
 }
 
-// ============ AD (РЕКЛАМА) ============
+// ============ AD ============
 let adStatus = null;
 let cooldownInterval = null;
 
@@ -396,7 +325,6 @@ async function checkAdStatus() {
     const userId = getUserId();
     const res = await fetch('/api/ad/' + userId);
     adStatus = await res.json();
-
     const adInfo = document.getElementById('adInfo');
     if (adInfo) {
       if (adStatus.adsLeft === 0) {
@@ -426,7 +354,6 @@ function closeAdModal() {
 
 function updateAdModalUI() {
   if (!adStatus) return;
-
   const statusEl = document.getElementById('adStatus');
   const btn = document.getElementById('watchAdBtn');
 
@@ -440,12 +367,10 @@ function updateAdModalUI() {
 
   if (adStatus.cooldownLeft > 0) {
     const sec = Math.ceil(adStatus.cooldownLeft / 1000);
-    statusEl.innerHTML = `<div>⏳ Wait <b style="color:#d4af37;">${sec}s</b> before next ad</div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
+    statusEl.innerHTML = `<div>⏳ Wait <b style="color:#d4af37;">${sec}s</b></div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
     btn.disabled = true;
     btn.style.opacity = '0.5';
     btn.textContent = `Wait ${sec}s`;
-
-    // Запускаем таймер обратного отсчёта
     if (cooldownInterval) clearInterval(cooldownInterval);
     cooldownInterval = setInterval(async () => {
       adStatus.cooldownLeft -= 1000;
@@ -456,14 +381,13 @@ function updateAdModalUI() {
         updateAdModalUI();
       } else {
         const s = Math.ceil(adStatus.cooldownLeft / 1000);
-        statusEl.innerHTML = `<div>⏳ Wait <b style="color:#d4af37;">${s}s</b> before next ad</div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
+        statusEl.innerHTML = `<div>⏳ Wait <b style="color:#d4af37;">${s}s</b></div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
         btn.textContent = `Wait ${s}s`;
       }
     }, 1000);
     return;
   }
 
-  // Можно смотреть
   statusEl.innerHTML = `<div style="color:#4CAF50;">✓ Ready to watch</div><div style="opacity:0.6; margin-top:4px;">Ads today: ${adStatus.adsToday}/${adStatus.dailyLimit}</div>`;
   btn.disabled = false;
   btn.style.opacity = '1';
@@ -474,22 +398,15 @@ async function watchAd() {
   const btn = document.getElementById('watchAdBtn');
   btn.disabled = true;
   btn.textContent = 'Loading ad...';
-
   try {
-    // Пытаемся показать реальную рекламу Monetag
     if (typeof window.show_9999999 === 'function') {
       await window.show_9999999();
     } else {
-      // Заглушка — имитируем просмотр рекламы 3 секунды
       await showFakeAd();
     }
-
-    // После просмотра — получаем награду
     await claimAdReward();
-
   } catch(e) {
     console.log('Ad error:', e);
-    // Если реклама не загрузилась — показываем заглушку
     await showFakeAd();
     await claimAdReward();
   }
@@ -497,25 +414,11 @@ async function watchAd() {
 
 function showFakeAd() {
   return new Promise(resolve => {
-    // Создаём оверлей с "рекламой"
     const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position:fixed; top:0; left:0; width:100%; height:100%;
-      background:#000; z-index:99999;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      color:#fff;
-    `;
-
+    overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff;`;
     let count = 3;
-    overlay.innerHTML = `
-      <div style="font-size:80px; margin-bottom:20px;">📺</div>
-      <div style="font-family:'Cinzel',serif; letter-spacing:3px; color:#d4af37; font-size:18px; margin-bottom:30px;">AD PLAYING</div>
-      <div id="adCount" style="font-size:60px; font-weight:bold; color:#d4af37;">${count}</div>
-      <div style="margin-top:20px; opacity:0.5; font-size:12px;">Please wait...</div>
-    `;
-
+    overlay.innerHTML = `<div style="font-size:80px; margin-bottom:20px;">📺</div><div style="font-family:'Cinzel',serif; letter-spacing:3px; color:#d4af37; font-size:18px; margin-bottom:30px;">AD PLAYING</div><div id="adCount" style="font-size:60px; font-weight:bold; color:#d4af37;">${count}</div><div style="margin-top:20px; opacity:0.5; font-size:12px;">Please wait...</div>`;
     document.body.appendChild(overlay);
-
     const timer = setInterval(() => {
       count--;
       const c = document.getElementById('adCount');
@@ -534,17 +437,13 @@ async function claimAdReward() {
     const userId = getUserId();
     const res = await fetch('/api/ad/' + userId, { method: 'POST' });
     const data = await res.json();
-
     if (data.ok) {
       balance = data.balance;
       updateBalance();
       haptic('win');
       showToast(`🎬 +${data.reward} ◆`);
-
-      // Обновляем статус
       await checkAdStatus();
       updateAdModalUI();
-
       setTimeout(() => closeAdModal(), 1500);
     } else {
       showToast('❌ ' + (data.error || 'Error'));
@@ -557,7 +456,7 @@ async function claimAdReward() {
   }
 }
 
-// ============ РЕФЕРАЛЬНАЯ СИСТЕМА ============
+// ============ REFERRAL ============
 let referralLink = '';
 
 async function openReferralPage() {
@@ -575,10 +474,8 @@ async function loadReferralData() {
     const userId = getUserId();
     const response = await fetch('/api/user/' + userId);
     const data = await response.json();
-
     const botUsername = 'my_casino_2030_bot';
     referralLink = `https://t.me/${botUsername}?start=${userId}`;
-
     document.getElementById('refLink').textContent = referralLink;
     document.getElementById('refCount').textContent = data.referrals || 0;
     document.getElementById('refLevel2').textContent = data.referralsLevel2 || 0;
@@ -599,12 +496,7 @@ async function loadTopReferrers() {
       return;
     }
     const medals = ['🥇', '🥈', '🥉'];
-    container.innerHTML = top.map((u, i) => `
-      <div style="display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px solid rgba(212,175,55,0.1);">
-        <span>${medals[i] || (i + 1) + '.'} ${u.name}</span>
-        <span style="color:#d4af37; font-family:'Cinzel',serif;">${u.referrals} · ${u.earnings} ◆</span>
-      </div>
-    `).join('');
+    container.innerHTML = top.map((u, i) => `<div style="display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px solid rgba(212,175,55,0.1);"><span>${medals[i] || (i + 1) + '.'} ${u.name}</span><span style="color:#d4af37; font-family:'Cinzel',serif;">${u.referrals} · ${u.earnings} ◆</span></div>`).join('');
   } catch(e) {
     document.getElementById('topReferrers').textContent = 'Error';
   }
@@ -643,15 +535,6 @@ function shareReferralLink() {
     if (tg && tg.openTelegramLink) {
       tg.openTelegramLink(shareUrl);
     } else {
-      window.open(shareUrl, '_bl
-                  function shareReferralLink() {
-  if (!referralLink) return;
-  const text = '🗝️ Join Black Key Casino! Get 200 chips bonus with my link:';
-  const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink) + '&text=' + encodeURIComponent(text);
-  try {
-    if (tg && tg.openTelegramLink) {
-      tg.openTelegramLink(shareUrl);
-    } else {
       window.open(shareUrl, '_blank');
     }
   } catch(e) {
@@ -662,28 +545,12 @@ function shareReferralLink() {
 function showToast(message) {
   const toast = document.createElement('div');
   toast.textContent = message;
-  toast.style.cssText = `
-    position:fixed; top:30px; left:50%;
-    transform:translateX(-50%);
-    background:linear-gradient(135deg, #1a1a1a, #0a0a0a);
-    color:#d4af37;
-    padding:14px 28px;
-    border-radius:25px;
-    font-family:'Cinzel',serif;
-    font-weight:700;
-    letter-spacing:3px;
-    text-transform:uppercase;
-    border:1px solid rgba(212,175,55,0.5);
-    box-shadow:0 10px 30px rgba(0,0,0,0.8);
-    z-index:10000;
-    font-size:13px;
-  `;
+  toast.style.cssText = `position:fixed; top:30px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg, #1a1a1a, #0a0a0a); color:#d4af37; padding:14px 28px; border-radius:25px; font-family:'Cinzel',serif; font-weight:700; letter-spacing:3px; text-transform:uppercase; border:1px solid rgba(212,175,55,0.5); box-shadow:0 10px 30px rgba(0,0,0,0.8); z-index:10000; font-size:13px;`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2000);
 }
 
-// ============ МАГАЗИН ============
-
+// ============ SHOP ============
 function openShop() {
   document.getElementById('shopModal').style.display = 'block';
 }
@@ -694,25 +561,20 @@ function closeShop() {
 
 async function buyPackage(packageId) {
   showToast('⏳ Creating invoice...');
-
   try {
     const userId = getUserId();
-
     const response = await fetch('/api/create-invoice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ packageId, userId })
     });
-
     const data = await response.json();
-
     if (!data.invoiceUrl) {
       showToast('❌ Failed to create invoice');
       console.log('Invoice error:', data);
       return;
     }
-
-    if (tg && tg.openInvoice) {
+        if (tg && tg.openInvoice) {
       tg.openInvoice(data.invoiceUrl, (status) => {
         if (status === 'paid') {
           closeShop();
@@ -737,12 +599,11 @@ async function buyPackage(packageId) {
   }
 }
 
-// ============ ИНИЦИАЛИЗАЦИЯ ============
+// ============ INIT ============
 initBalance();
 checkDailyStatus();
 checkAdStatus();
 
-// Обновляем статусы каждые 30 секунд (для таймера рекламы)
 setInterval(() => {
   checkDailyStatus();
 }, 60000);
