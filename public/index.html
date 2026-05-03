@@ -369,5 +369,96 @@
   </div>
 
   <script src="app.js"></script>
+  <!-- ============ DICE GAME ============ -->
+<div id="diceScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+
+  <div class="game-header">
+    <div class="game-title">🎲 DICE</div>
+    <div class="balance-display">💰 <span id="diceBalance">0</span></div>
+  </div>
+
+  <div class="dice-container">
+    <div class="dice-display" id="diceDisplay">?</div>
+
+    <div class="dice-prediction">
+      <div class="dice-label">Your prediction:</div>
+      <div class="dice-choice">
+        <button class="dice-btn active" id="diceUnder" onclick="selectDiceMode('under')">
+          ⬇ UNDER 50
+        </button>
+        <button class="dice-btn" id="diceOver" onclick="selectDiceMode('over')">
+          ⬆ OVER 50
+        </button>
+      </div>
+      <div class="dice-hint">Win x2 if you guess right!</div>
+    </div>
+
+    <div class="bet-control">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeDiceBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="diceBetAmount">50</span></div>
+        <button onclick="changeDiceBet(10)">+10</button>
+      </div>
+    </div>
+
+    <button class="spin-btn" id="rollDiceBtn" onclick="rollDice()">🎲 Roll</button>
+
+    <div id="diceResult" class="result-area"></div>
+  </div>
+</div>
+
+<!-- ============ ROULETTE GAME ============ -->
+<div id="rouletteScreen" class="screen hidden">
+  <div class="back-btn" onclick="backToMenu()">← Back</div>
+
+  <div class="game-header">
+    <div class="game-title">🎡 ROULETTE</div>
+    <div class="balance-display">💰 <span id="rouletteBalance">0</span></div>
+  </div>
+
+  <div class="roulette-container">
+    <div class="roulette-wheel" id="rouletteWheel">
+      <div class="roulette-number" id="rouletteNumber">?</div>
+    </div>
+
+    <div class="roulette-bets">
+      <div class="dice-label">Your bet:</div>
+      <div class="roulette-choices">
+        <button class="roulette-btn red" id="betRed" onclick="selectRouletteBet('red')">
+          🔴 RED<br><small>x2</small>
+        </button>
+        <button class="roulette-btn black" id="betBlack" onclick="selectRouletteBet('black')">
+          ⚫ BLACK<br><small>x2</small>
+        </button>
+        <button class="roulette-btn green" id="betGreen" onclick="selectRouletteBet('green')">
+          🟢 ZERO<br><small>x14</small>
+        </button>
+      </div>
+      <div class="roulette-choices">
+        <button class="roulette-btn" id="betEven" onclick="selectRouletteBet('even')">
+          EVEN<br><small>x2</small>
+        </button>
+        <button class="roulette-btn" id="betOdd" onclick="selectRouletteBet('odd')">
+          ODD<br><small>x2</small>
+        </button>
+      </div>
+    </div>
+
+    <div class="bet-control">
+      <div class="bet-label">Bet:</div>
+      <div class="bet-buttons">
+        <button onclick="changeRouletteBet(-10)">-10</button>
+        <div class="bet-value">◆ <span id="rouletteBetAmount">50</span></div>
+        <button onclick="changeRouletteBet(10)">+10</button>
+      </div>
+    </div>
+
+    <button class="spin-btn" id="spinRouletteBtn" onclick="spinRoulette()">🎡 Spin</button>
+
+    <div id="rouletteResult" class="result-area"></div>
+  </div>
+</div>
 </body>
 </html>
